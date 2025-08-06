@@ -1,18 +1,32 @@
 import React, { useState } from "react";
 import { Search, User, ShoppingCart } from "lucide-react";
 import logo from "../images/logo.png";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react"; // Already probably imported
 
-const Navbar = ({ onCategorySelect }) => {
+const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState(""); // Track active category for styling
+  const [activeCategory, setActiveCategory] = useState("");
+
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isLoggedIn = false;
-  const isProductDetailsPage = location.pathname.startsWith("/product/");
 
-  const mainNavItems = ["Home", "Products", "About Us", "Contact Us"];
+  // Inside your Navbar component:
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const category = queryParams.get("category") || "";
+    setActiveCategory(category);
+  }, [location.search]);
+
+  // Show tabs only on these pages
+  const allowedCategoryPaths = ["/", "/home", "/products", "/shop"];
+  const showCategoryTabs = allowedCategoryPaths.includes(location.pathname);
+
+  const mainNavItems = ["Home","About Us", "Contact Us"];
+
   const categories = [
     { name: "All", value: "" },
     { name: "Women", value: "women" },
@@ -24,16 +38,12 @@ const Navbar = ({ onCategorySelect }) => {
   ];
 
   const handleCategoryClick = (categoryValue) => {
-    // console.log("Navbar category clicked:", categoryValue); // Debug log
     setActiveCategory(categoryValue);
-    if (onCategorySelect) {
-      onCategorySelect(categoryValue);
-    }
+    navigate(`/products?category=${categoryValue.toLowerCase()}`);
   };
 
   return (
     <>
-      {/* #ffcce0Navbar Top #bccdb1*/}
       <nav className="bg-[#e1cffb] text-[#444444] py-2 shadow-sm fixed w-full top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
@@ -155,8 +165,8 @@ const Navbar = ({ onCategorySelect }) => {
         </div>
       </nav>
 
-      {/* Category Section - #f2ffe9 Hidden on Product Details Page #e5ffe5*/}
-      {!isProductDetailsPage && (
+      {/* Category Tabs (only on specific routes) */}
+      {showCategoryTabs && (
         <>
           <div className="bg-[#f7f4ff] border-t border-gray-100 px-2 py-1 shadow fixed top-[70px] w-full z-30">
             <div className="max-w-7xl mx-auto px-4">
