@@ -1,91 +1,223 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import {
+  LogOut,
+  BarChart3,
+  Users as UsersIcon,
+  Package,
+  Home,
+  Edit,
+  Settings,
+} from "lucide-react";
+import NotificationBell from "../../components/NotificationBell";
+import logo from "../../images/logo.png";
 import Stats from "./DashboardStats.jsx";
 import Users from "./UsersList.jsx";
 import Orders from "./OrdersPanel.jsx";
 import EditHomepage from "./EditHomepage.jsx";
+import EditFooter from "./EditFooter.jsx";
 import Products from "./EditProducts.jsx";
+import api from "../../services/api";
+import { useNotification } from "../../context/NotificationContext";
 
 const AdminLayout = () => {
   const [activeTab, setActiveTab] = useState("stats");
+  const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { user, dispatch, logout } = useAuth();
+  const navigate = useNavigate();
+  const { addNotification } = useNotification();
+
+  useEffect(() => {
+    if (user?.role !== "admin") {
+      navigate("/");
+      return;
+    }
+    fetchAdminData();
+  }, [user, navigate]);
+
+  const fetchAdminData = async () => {
+    setLoading(true);
+    try {
+      const [ordersRes, usersRes, productsRes] = await Promise.all([
+        api.getAllOrders(),
+        api.getAllUsers(),
+        api.getProducts(),
+      ]);
+
+      const [ordersData, usersData, productsData] = await Promise.all([
+        ordersRes.json(),
+        usersRes.json(),
+        productsRes.json(),
+      ]);
+
+      if (ordersData.success) setOrders(ordersData.orders);
+      if (usersData.success) setUsers(usersData.users);
+      if (productsData.success) setProducts(productsData.products);
+    } catch (err) {
+      console.error("Error fetching admin data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+      addNotification("Logged out successfully", "success");
+      logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+      addNotification("Logout failed", "error");
+      logout(); // Force logout even if API call fails
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "stats":
-        return <Stats />;
+        return <Stats orders={orders} users={users} products={products} />;
       case "users":
-        return <Users />;
+        return <Users users={users} onUpdate={fetchAdminData} />;
       case "orders":
-        return <Orders />;
+        return <Orders orders={orders} onUpdate={fetchAdminData} />;
       case "edit-homepage":
         return <EditHomepage />;
+      case "edit-footer":
+        return <EditFooter />;
       case "products":
-        return <Products />;
+        return <Products products={products} onUpdate={fetchAdminData} />;
       default:
-        return <Stats />;
+        return <Stats orders={orders} users={users} products={products} />;
     }
   };
 
+  const navItems = [
+    { id: "stats", label: "Dashboard", icon: BarChart3 },
+    { id: "users", label: "Users", icon: UsersIcon },
+    { id: "orders", label: "Orders", icon: Package },
+    { id: "products", label: "Products", icon: Edit },
+    { id: "edit-homepage", label: "Homepage", icon: Home },
+    { id: "edit-footer", label: "Footer", icon: Settings },
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-52 bg-[#f7f4ff] backdrop-blur-sm border-r border-gray-300 p-6">
-        <h2 className="text-2xl font-bold text-purple-800 mb-8">Admin Panel</h2>
-        <nav className="flex flex-col divide-y divide-gray-300">
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={`py-3 text-left ${
-              activeTab === "stats"
-                ? "text-purple-800 font-semibold"
-                : "text-gray-600"
-            }`}
-          >
-            Dashboard Stats
-          </button>
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`py-3 text-left ${
-              activeTab === "users"
-                ? "text-purple-800 font-semibold"
-                : "text-gray-600"
-            }`}
-          >
-            Users List
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`py-3 text-left ${
-              activeTab === "orders"
-                ? "text-purple-800 font-semibold"
-                : "text-gray-600"
-            }`}
-          >
-            Order Management
-          </button>
-          <button
-            onClick={() => setActiveTab("edit-homepage")}
-            className={`py-3 text-left ${
-              activeTab === "edit-homepage"
-                ? "text-purple-800 font-semibold"
-                : "text-gray-600"
-            }`}
-          >
-            Edit Homepage
-          </button>
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`py-3 text-left ${
-              activeTab === "products"
-                ? "text-purple-800 font-semibold"
-                : "text-gray-600"
-            }`}
-          >
-            Manage Products
-          </button>
-        </nav>
-      </aside>
+    <div className="min-h-screen bg-[#f7f4ff]">
+      {/* Mobile/Desktop Navbar */}
+      <nav className="bg-[#e1cffb] shadow-sm border-b border-[#dcd6f7]">
+        <div className="px-4 sm:px-6 py-4">
+          {/* Mobile Layout */}
+          <div className="lg:hidden">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <img
+                  src={logo}
+                  alt="Logo"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-[#DBDDFF]"
+                />
+                <div>
+                  <h1 className="text-sm sm:text-base font-semibold text-[#444444]">
+                    Varu's Comfy Knits
+                  </h1>
+                  <p className="text-xs text-[#666]">Admin Panel</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationBell isAdmin={true} />
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1 text-[#444444] px-2 py-1 rounded-lg hover:bg-white transition-all cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="text-xs">Logout</span>
+                </button>
+              </div>
+            </div>
+            {/* Mobile Navigation Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all cursor-pointer ${
+                      activeTab === item.id
+                        ? "bg-[#7b5fc4] text-white shadow-md"
+                        : "text-[#444444] hover:bg-[#f7f4ff] hover:text-[#7b5fc4]"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-xs font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden lg:flex items-center justify-between">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-3">
+                <img
+                  src={logo}
+                  alt="Logo"
+                  className="w-12 h-12 rounded-full object-cover border border-[#DBDDFF]"
+                />
+                <div>
+                  <h1 className="text-lg font-semibold text-[#444444]">
+                    Varu's Comfy Knits
+                  </h1>
+                  <p className="text-sm text-[#666]">Admin Panel</p>
+                </div>
+              </div>
+              <div className="flex space-x-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all cursor-pointer ${
+                        activeTab === item.id
+                          ? "bg-[#7b5fc4] text-white shadow-md"
+                          : "text-[#444444] hover:bg-[#f7f4ff] hover:text-[#7b5fc4]"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <NotificationBell isAdmin={true} />
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-[#444444] px-4 py-2 rounded-lg hover:bg-white transition-all cursor-pointer"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="text-sm font-medium">Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Main Content */}
-      <main className="flex-1 p-6">{renderTabContent()}</main>
+      <main className="p-4 sm:p-6">{renderTabContent()}</main>
     </div>
   );
 };

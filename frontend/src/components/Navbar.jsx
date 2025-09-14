@@ -1,31 +1,72 @@
-import React, { useState } from "react";
-import { Search, User, ShoppingCart } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Search, User, ShoppingCart, Heart, Home } from "lucide-react";
 import logo from "../images/logo.png";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect } from "react"; // Already probably imported
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import LoginModal from "./LoginModal";
+import NotificationBell from "./NotificationBell";
+import api from "../services/api";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const profileDropdownRef = useRef(null);
+  
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, user, dispatch, logout } = useAuth();
+  const { items } = useCart();
 
-  const isLoggedIn = false;
-
-  // Inside your Navbar component:
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const category = queryParams.get("category") || "";
     setActiveCategory(category);
   }, [location.search]);
 
-  // Show tabs only on these pages
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchWishlistCount = async () => {
+      if (isAuthenticated && user?.role !== 'admin') {
+        try {
+          const response = await fetch('http://localhost:5000/api/v1/wishlist', {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          });
+          const data = await response.json();
+          if (data.success) {
+            setWishlistCount(data.wishlist.length);
+          }
+        } catch (err) {
+          console.error('Error fetching wishlist count:', err);
+        }
+      }
+    };
+    fetchWishlistCount();
+  }, [isAuthenticated, user]);
+
   const allowedCategoryPaths = ["/", "/home", "/products", "/shop"];
   const showCategoryTabs = allowedCategoryPaths.includes(location.pathname);
 
-  const mainNavItems = ["Home","About Us", "Contact Us"];
+  const mainNavItems = [
+    { name: "Home", icon: Home, href: "/" },
+    { name: "Contact Us", href: "#footer" }
+  ];
 
   const categories = [
     { name: "All", value: "" },
@@ -41,6 +82,19 @@ const Navbar = () => {
     setActiveCategory(categoryValue);
     navigate(`/products?category=${categoryValue.toLowerCase()}`);
   };
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+      logout();
+      setIsProfileMenuOpen(false);
+    } catch (err) {
+      console.error('Logout error:', err);
+      logout(); // Force logout even if API call fails
+    }
+  };
+
+  const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <>
@@ -63,60 +117,123 @@ const Navbar = () => {
               <div className="relative hidden sm:block">
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      navigate(`/products?search=${searchQuery}`);
+                    }
+                  }}
                   className="w-40 md:w-52 pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#DBDDFF] bg-white"
                 />
-                <Search className="cursor-pointer absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search 
+                  onClick={() => navigate(`/products?search=${searchQuery}`)}
+                  className="cursor-pointer absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" 
+                />
               </div>
 
-              {/* Cart */}
-              <a href="/cart" className="hover:text-[#F4A8A8] transition">
-                <ShoppingCart className="cursor-pointer h-5 w-5" />
-              </a>
+              {/* Home button for non-admin users */}
+              {user?.role !== 'admin' && (
+                <a href="/" className="hover:text-[#F4A8A8] transition cursor-pointer">
+                  <Home className="h-5 w-5" />
+                </a>
+              )}
+
+              {/* Notifications for authenticated users */}
+              {isAuthenticated && <NotificationBell isAdmin={user?.role === 'admin'} />}
+
+              {/* Wishlist & Cart - Only show for non-admin users */}
+              {user?.role !== 'admin' && (
+                <>
+                  <a href="/wishlist" className="hover:text-[#F4A8A8] transition relative">
+                    <Heart className="cursor-pointer h-5 w-5" />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </a>
+                  <a href="/cart" className="hover:text-[#F4A8A8] transition relative">
+                    <ShoppingCart className="cursor-pointer h-5 w-5" />
+                    {cartItemCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {cartItemCount}
+                      </span>
+                    )}
+                  </a>
+                </>
+              )}
 
               {/* Profile Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              <div 
+                className="relative"
+                ref={profileDropdownRef}
+              >
+                <div 
                   className="cursor-pointer w-8 h-8 rounded-full bg-white hover:bg-[#fceeee] flex items-center justify-center"
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 >
                   <User className="h-4 w-4 text-[#444444]" />
-                </button>
+                </div>
 
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-md z-10 py-2 w-44 text-sm">
-                    {mainNavItems.map((item) => (
+                    {user?.role !== 'admin' && mainNavItems.map((item) => (
                       <a
-                        key={item}
-                        href="#"
-                        className="block px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
+                        key={item.name}
+                        href={item.href}
+                        onClick={(e) => {
+                          if (item.name === 'Contact Us') {
+                            e.preventDefault();
+                            document.getElementById('footer')?.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                        className="flex items-center px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
                       >
-                        {item}
+                        {item.icon && <item.icon className="w-4 h-4 mr-2" />}
+                        {item.name}
                       </a>
                     ))}
                     <hr className="my-1 border-gray-200" />
-                    {isLoggedIn ? (
+                    {isAuthenticated ? (
                       <>
-                        <a
-                          href="/profile"
-                          className="block px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
-                        >
-                          My Profile
-                        </a>
+                        <span className="block px-4 py-2 text-gray-600 text-xs">
+                          Welcome, {user?.name}
+                        </span>
+                        {user?.role !== 'admin' && (
+                          <a
+                            href="/my-profile"
+                            className="block px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
+                          >
+                            My Profile
+                          </a>
+                        )}
+                        {user?.role === 'admin' && (
+                          <a
+                            href="/admindashboard"
+                            className="block px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
+                          >
+                            Admin Dashboard
+                          </a>
+                        )}
                         <button
-                          onClick={() => console.log("Logout")}
-                          className="block w-full text-left px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878] cursor-pointer"
                         >
                           Logout
                         </button>
                       </>
                     ) : (
-                      <a
-                        href="/login"
-                        className="block px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
+                      <button
+                        onClick={() => {
+                          setShowLoginModal(true);
+                          setIsProfileMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878] cursor-pointer"
                       >
                         Login / Sign Up
-                      </a>
+                      </button>
                     )}
                   </div>
                 )}
@@ -125,7 +242,7 @@ const Navbar = () => {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden ml-2"
+                className="lg:hidden ml-2 cursor-pointer"
               >
                 <span className="text-sm">☰</span>
               </button>
@@ -136,25 +253,54 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <div className="lg:hidden py-2 border-t border-gray-200">
               <div className="flex flex-col space-y-2">
-                {mainNavItems.map((item) => (
+                {user?.role !== 'admin' && mainNavItems.map((item) => (
                   <a
-                    key={item}
-                    href="#"
-                    className="text-[#444444] hover:text-[#D97878] py-1 px-2"
+                    key={item.name}
+                    href={item.href}
+                    onClick={(e) => {
+                      if (item.name === 'Contact Us') {
+                        e.preventDefault();
+                        document.getElementById('footer')?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    className="flex items-center text-[#444444] hover:text-[#D97878] py-1 px-2"
                   >
-                    {item}
+                    {item.icon && <item.icon className="w-4 h-4 mr-2" />}
+                    {item.name}
                   </a>
                 ))}
-                <a
-                  href={isLoggedIn ? "/profile" : "/login"}
-                  className="text-[#444444] hover:text-[#D97878] py-1 px-2"
-                >
-                  {isLoggedIn ? "My Profile" : "Login / Sign Up"}
-                </a>
-                {isLoggedIn && (
+                {user?.role !== 'admin' && (
+                  isAuthenticated ? (
+                    <a
+                      href="/my-profile"
+                      className="text-[#444444] hover:text-[#D97878] py-1 px-2"
+                    >
+                      My Profile
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowLoginModal(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="text-left text-[#444444] hover:text-[#D97878] py-1 px-2 w-full cursor-pointer"
+                    >
+                      Login / Sign Up
+                    </button>
+                  )
+                )}
+                {user?.role === 'admin' && (
+                  <a
+                    href="/admindashboard"
+                    className="text-[#444444] hover:text-[#D97878] py-1 px-2"
+                  >
+                    Admin Dashboard
+                  </a>
+                )}
+                {isAuthenticated && (
                   <button
-                    onClick={() => console.log("Logout")}
-                    className="text-left text-[#444444] hover:text-[#D97878] py-1 px-2"
+                    onClick={handleLogout}
+                    className="text-left text-[#444444] hover:text-[#D97878] py-1 px-2 cursor-pointer"
                   >
                     Logout
                   </button>
@@ -165,7 +311,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Category Tabs (only on specific routes) */}
+      {/* Category Tabs */}
       {showCategoryTabs && (
         <>
           <div className="bg-[#f7f4ff] border-t border-gray-100 px-2 py-1 shadow fixed top-[70px] w-full z-30">
@@ -187,11 +333,15 @@ const Navbar = () => {
               </div>
             </div>
           </div>
-
-          {/* Spacer below category row */}
           <div className="h-[124px]"></div>
         </>
       )}
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </>
   );
 };

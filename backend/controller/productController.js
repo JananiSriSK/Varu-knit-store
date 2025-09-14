@@ -1,17 +1,122 @@
 import handleAsyncError from "../middleware/handleAsyncError.js";
 import Product from "../models/productModel.js";
+import User from "../models/userModel.js";
+import Notification from "../models/notificationModel.js";
 import APIFunctionality from "../utils/apiFunctionality.js";
 import HandleError from "../utils/handleError.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import { convertDriveShareLink, validateDriveUrl } from "../utils/driveUtils.js";
+import { parseSize } from "../utils/sizeParser.js";
 
 //create a new product
 
 export const createProducts = handleAsyncError(async (req, res) => {
-  req.body.user = req.user.id; // id of user(admin) who created the product
-  const product = await Product.create(req.body);
-  res.status(201).json({
-    success: true,
-    product,
-  });
+  try {
+    console.log('=== Product Creation Request ===');
+    console.log('Body keys:', Object.keys(req.body));
+    console.log('Files:', req.files ? Object.keys(req.files) : 'No files');
+    
+    req.body.user = req.user.id;
+    
+    // Parse size field
+    req.body.size = parseSize(req.body.size);
+    
+    // Handle images - either upload OR drive links
+    const imageArray = [];
+    
+    if (req.body.uploadMethod === 'drive' && req.body.driveImages) {
+      // Drive links method
+      const driveImages = Array.isArray(req.body.driveImages) ? req.body.driveImages : [req.body.driveImages];
+      driveImages.forEach((url, index) => {
+        if (url.trim() && validateDriveUrl(url.trim())) {
+          const directUrl = convertDriveShareLink(url.trim());
+          imageArray.push({
+            public_id: `drive_image_${Date.now()}_${index}`,
+            url: directUrl,
+            source: 'drive'
+          });
+        }
+      });
+    } else if (req.files && req.files.images) {
+      // File upload method
+      const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+      
+      for (const image of images) {
+        if (image.size > 0) {
+          console.log('Uploading product image:', image.name, 'Size:', image.size);
+          const result = await uploadToCloudinary(image.data, 'varuknits/products');
+          imageArray.push({ ...result, source: 'cloudinary' });
+          console.log('Product image uploaded:', result.url);
+        }
+      }
+    }
+    
+    if (imageArray.length > 0) {
+      req.body.image = imageArray;
+    }
+    
+    // Handle videos - either upload OR drive links
+    const videoArray = [];
+    
+    if (req.body.uploadMethod === 'drive' && req.body.driveVideos) {
+      // Drive links method
+      const driveVideos = Array.isArray(req.body.driveVideos) ? req.body.driveVideos : [req.body.driveVideos];
+      driveVideos.forEach((url, index) => {
+        if (url.trim() && validateDriveUrl(url.trim())) {
+          const directUrl = convertDriveShareLink(url.trim());
+          videoArray.push({
+            public_id: `drive_video_${Date.now()}_${index}`,
+            url: directUrl,
+            source: 'drive'
+          });
+        }
+      });
+    } else if (req.files && req.files.videos) {
+      // File upload method
+      const videos = Array.isArray(req.files.videos) ? req.files.videos : [req.files.videos];
+      
+      for (const video of videos) {
+        if (video.size > 0) {
+          console.log('Uploading product video:', video.name, 'Size:', video.size);
+          const result = await uploadToCloudinary(video.data, 'varuknits/videos', 'video');
+          videoArray.push({ ...result, source: 'cloudinary' });
+          console.log('Product video uploaded:', result.url);
+        }
+      }
+    }
+    
+    if (videoArray.length > 0) {
+      req.body.videos = videoArray;
+    }
+    
+    const product = await Product.create(req.body);
+    console.log('Product created successfully:', product._id);
+    
+    // Create notifications for all users about new product
+    const users = await User.find({ role: 'user' });
+    const notifications = users.map(user => ({
+      user: user._id,
+      type: 'new_product',
+      title: 'New Product Added!',
+      message: `Check out our new ${product.category} item: ${product.name}`,
+      data: { productId: product._id }
+    }));
+    
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
+    
+    res.status(201).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    console.error('Product creation error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create product'
+    });
+  }
 });
 
 //get all products
@@ -69,27 +174,152 @@ export const getSubcategory = handleAsyncError(async (req, res, next) => {
 //update product
 
 export const updateProduct = handleAsyncError(async (req, res, next) => {
-  const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  if (!product) {
-    return next(new HandleError("Product not found", 404));
-  }
+  try {
+    console.log('=== Product Update Request ===');
+    console.log('Product ID:', req.params.id);
+    console.log('Files:', req.files ? Object.keys(req.files) : 'No files');
+    
+    let product = await Product.findById(req.params.id);
+    if (!product) {
+      return next(new HandleError("Product not found", 404));
+    }
+    
+    // Handle image and video updates - either upload OR drive links
+    const imageArray = [];
+    const videoArray = [];
+    
+    // Delete old media if updating
+    if (product.image && product.image.length > 0) {
+      for (const img of product.image) {
+        if (img.public_id && img.source === 'cloudinary') {
+          console.log('Deleting old product image:', img.public_id);
+          await deleteFromCloudinary(img.public_id);
+        }
+      }
+    }
+    
+    if (product.videos && product.videos.length > 0) {
+      for (const vid of product.videos) {
+        if (vid.public_id && vid.source === 'cloudinary') {
+          console.log('Deleting old product video:', vid.public_id);
+          await deleteFromCloudinary(vid.public_id);
+        }
+      }
+    }
+    
+    // Handle images - either upload OR drive links
+    if (req.body.uploadMethod === 'drive' && req.body.driveImages) {
+      // Drive links method
+      const driveImages = Array.isArray(req.body.driveImages) ? req.body.driveImages : [req.body.driveImages];
+      driveImages.forEach((url, index) => {
+        if (url.trim() && validateDriveUrl(url.trim())) {
+          const directUrl = convertDriveShareLink(url.trim());
+          imageArray.push({
+            public_id: `drive_image_${Date.now()}_${index}`,
+            url: directUrl,
+            source: 'drive'
+          });
+        }
+      });
+    } else if (req.files && req.files.images) {
+      // File upload method
+      const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+      
+      for (const image of images) {
+        if (image.size > 0) {
+          console.log('Uploading updated product image:', image.name);
+          const result = await uploadToCloudinary(image.data, 'varuknits/products');
+          imageArray.push({ ...result, source: 'cloudinary' });
+          console.log('Updated product image uploaded:', result.url);
+        }
+      }
+    }
+    
+    if (imageArray.length > 0) {
+      req.body.image = imageArray;
+    }
+    
+    // Handle videos - either upload OR drive links
+    if (req.body.uploadMethod === 'drive' && req.body.driveVideos) {
+      // Drive links method
+      const driveVideos = Array.isArray(req.body.driveVideos) ? req.body.driveVideos : [req.body.driveVideos];
+      driveVideos.forEach((url, index) => {
+        if (url.trim() && validateDriveUrl(url.trim())) {
+          const directUrl = convertDriveShareLink(url.trim());
+          videoArray.push({
+            public_id: `drive_video_${Date.now()}_${index}`,
+            url: directUrl,
+            source: 'drive'
+          });
+        }
+      });
+    } else if (req.files && req.files.videos) {
+      // File upload method
+      const videos = Array.isArray(req.files.videos) ? req.files.videos : [req.files.videos];
+      
+      for (const video of videos) {
+        if (video.size > 0) {
+          console.log('Uploading updated product video:', video.name);
+          const result = await uploadToCloudinary(video.data, 'varuknits/videos', 'video');
+          videoArray.push({ ...result, source: 'cloudinary' });
+          console.log('Updated product video uploaded:', result.url);
+        }
+      }
+    }
+    
+    if (videoArray.length > 0) {
+      req.body.videos = videoArray;
+    }
+    
+    // Parse size field
+    req.body.size = parseSize(req.body.size);
+    
+    product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    
+    console.log('Product updated successfully:', product._id);
 
-  res.status(200).json({
-    success: "true",
-    product,
-  });
+    res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    console.error('Product update error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update product'
+    });
+  }
 });
 
 // delete product
 
 export const deleteProduct = handleAsyncError(async (req, res, next) => {
-  const product = await Product.findByIdAndDelete(req.params.id);
+  const product = await Product.findById(req.params.id);
   if (!product) {
     return next(new HandleError("Product not found", 404));
   }
+  
+  // Delete images and videos from Cloudinary only
+  if (product.image && product.image.length > 0) {
+    for (const img of product.image) {
+      if (img.public_id && img.source === 'cloudinary') {
+        await deleteFromCloudinary(img.public_id);
+      }
+    }
+  }
+  
+  if (product.videos && product.videos.length > 0) {
+    for (const vid of product.videos) {
+      if (vid.public_id && vid.source === 'cloudinary') {
+        await deleteFromCloudinary(vid.public_id);
+      }
+    }
+  }
+  
+  await Product.findByIdAndDelete(req.params.id);
 
   res.status(200).json({
     success: "true",

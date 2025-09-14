@@ -1,18 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import PersonalDetails from "../components/PersonalDetails.jsx";
 import RecentOrders from "../components/RecentOrders.jsx";
+import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 
 const Profile = () => {
+  const location = useLocation();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("personal");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const response = await api.getMyOrders();
+      const data = await response.json();
+      
+      if (data.success) {
+        setOrders(data.orders);
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto mt-20 bg-gray-50">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto mt-20 bg-gray-50 min-h-screen">
       <h2 className="text-2xl font-semibold mb-6 text-[#444]">
         Account Dashboard
       </h2>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-4 border-b border-gray-200 ">
+      <div className="mb-6 flex gap-4 border-b border-gray-200">
         <button
           className={`py-2 px-4 font-medium cursor-pointer ${
             activeTab === "personal"
@@ -36,8 +73,10 @@ const Profile = () => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "personal" && <PersonalDetails />}
-      {activeTab === "orders" && <RecentOrders />}
+      {activeTab === "personal" && <PersonalDetails user={user} />}
+      {activeTab === "orders" && (
+        <RecentOrders orders={orders} loading={loading} />
+      )}
     </div>
   );
 };

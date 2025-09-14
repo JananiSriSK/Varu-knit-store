@@ -19,15 +19,18 @@ const productRouter = express.Router();
 productRouter.route("/products").get(getAllProducts); //get all products or list of products based on category, sub category = keyword, pages, limits
 productRouter.route("/product/:id").get(getProductDetails); //get single product based on id
 productRouter.route("/reviews").get(getProductReviews);
-productRouter.route("/subcategory").get(getSubcategory); //get the subcategories for filtering in frontend
+productRouter.route("/subcategories").get(getSubcategory); //get the subcategories for filtering in frontend
 
 //user- can create or delete review
 productRouter.route("/review").put(verifyUserAuth, createProductReview);
 
 //admin actions
 productRouter
+  .route("/admin/product/new")
+  .post(verifyUserAuth, roleBasedAccess("admin"), createProducts);
+
+productRouter
   .route("/admin/products")
-  .post(verifyUserAuth, roleBasedAccess("admin"), createProducts)
   .get(verifyUserAuth, roleBasedAccess("admin"), getAdminProducts); // admin gets to view products in a table
 
 productRouter

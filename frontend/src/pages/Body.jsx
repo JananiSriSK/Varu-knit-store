@@ -1,16 +1,72 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "../components/ProductCard.jsx";
-import dummyProducts from "../constants/dummyProducts.js";
+import LoginModal from "../components/LoginModal.jsx";
 import logo from "../images/logo.png";
 import bgImage from "../images/banner4.jpg";
+import api from "../services/api";
 
 const Body = () => {
+  const [homeData, setHomeData] = useState({
+    welcomeTitle: "Welcome !!",
+    welcomeSubtitle: "Every product is handmade with love, care and attention to detail.",
+    bannerImage: null,
+    phoneNumber: "+91 9150324779",
+    aboutTitle: "Our Story",
+    aboutDescription1: "Founded in 2015, Varuknit began as a passion for handcrafted yarn creations.",
+    aboutDescription2: "Every piece is custom-made with eco-conscious materials.",
+    aboutImage: null,
+    collectionTitle: "Winter Collection",
+    collectionBy: "By Luis Vuitton",
+    collectionDescription: "Lorem ipsum, dolor sit amet consectetur adipisicing elit.",
+    collectionImage: null
+  });
+  const [latestProducts, setLatestProducts] = useState([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchHomepageData();
+    fetchLatestProducts();
+    
+    // Check if login modal should be opened
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('login') === 'true') {
+      setShowLoginModal(true);
+    }
+  }, [location]);
+
+  const fetchHomepageData = async () => {
+    try {
+      const response = await api.getHomepage();
+      const data = await response.json();
+      if (data.success) {
+        setHomeData(data.homepage);
+      }
+    } catch (err) {
+      console.error('Error fetching homepage data:', err);
+    }
+  };
+
+  const fetchLatestProducts = async () => {
+    try {
+      const response = await api.getProducts('?sort=-createdAt&limit=3');
+      const data = await response.json();
+      if (data.success) {
+        setLatestProducts(data.products);
+      }
+    } catch (err) {
+      console.error('Error fetching latest products:', err);
+    }
+  };
+
   return (
     <div className="bg-gray-50 py-1 mx-auto max-w-screen-lg">
       {/* Header */}
       <div
         className="relative h-70 rounded-b-lg bg-cover bg-center bg-no-repeat shadow-lg"
-        style={{ backgroundImage: `url(${bgImage})` }}
+        style={{ backgroundImage: `url(${homeData?.bannerImage?.url || bgImage})` }}
       >
         <div className="px-4 pt-8 pb-10">
           <div className="absolute inset-x-0 -bottom-10 mx-auto w-36 rounded-full border-1 border-white shadow-lg">
@@ -26,9 +82,9 @@ const Body = () => {
       {/* Intro */}
       <div className="mt-16 flex flex-col items-start justify-center space-y-4 py-8 px-4 sm:flex-row sm:space-y-0 md:justify-between lg:px-0">
         <div className="max-w-lg">
-          <h1 className="text-2xl font-bold text-gray-800">Welcome !!</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{homeData?.welcomeTitle || "Welcome !!"}</h1>
           <p className="mt-2 text-gray-600">
-            Every product is handmade with love, care and attention to detail.
+            {homeData?.welcomeSubtitle || "Every product is handmade with love, care and attention to detail."}
           </p>
         </div>
         <div>
@@ -58,7 +114,7 @@ const Body = () => {
             >
               <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
             </svg>
-            +91 9150324779
+            {homeData?.phoneNumber || "+91 9150324779"}
           </p>
         </div>
       </div>
@@ -68,15 +124,14 @@ const Body = () => {
             {/* Text Content */}
             <div className="flex w-full flex-col p-4 sm:w-1/2 sm:p-8 lg:w-3/5">
               <h2 className="text-xl font-bold text-gray-900 md:text-2xl lg:text-4xl">
-                Winter Collection
+                {homeData?.collectionTitle || "Winter Collection"}
               </h2>
-              <p className="mt-2 text-lg">By Luis Vuitton</p>
+              <p className="mt-2 text-lg">{homeData?.collectionBy || "By Luis Vuitton"}</p>
               <p className="mt-4 mb-8 max-w-md text-gray-500">
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit.
-                Aliquam iusto, cumque dolores sit odio ex.
+                {homeData?.collectionDescription || "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Aliquam iusto, cumque dolores sit odio ex."}
               </p>
               <a
-                href="#"
+                href="/products"
                 className="group mt-auto flex w-44 cursor-pointer select-none items-center justify-center rounded-md bg-black px-6 py-2 text-white transition"
               >
                 <span className="group-hover:underline font-bold text-center w-full">
@@ -103,8 +158,8 @@ const Body = () => {
             <div className="order-first ml-auto h-48 w-full bg-gray-700 sm:order-none sm:h-auto sm:w-1/2 lg:w-2/5">
               <img
                 className="h-full w-full object-cover"
-                src="https://images.unsplash.com/photo-1599751449128-eb7249c3d6b1?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1169&q=80"
-                alt="Winter Collection"
+                src={homeData?.collectionImage?.url || "https://images.unsplash.com/photo-1599751449128-eb7249c3d6b1?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1169&q=80"}
+                alt={homeData?.collectionTitle || "Winter Collection"}
                 loading="lazy"
               />
             </div>
@@ -112,22 +167,17 @@ const Body = () => {
         </div>
       </section>
 
-      {/* Feature section*/}
+      {/* Latest Collection section*/}
       <section className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 text-center">
           <h2 className="text-xl md:text-2xl font-serif font-semibold text-[#444444] mb-6">
-            Featured Products
+            Latest Collection
           </h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-8">
-            {dummyProducts
-              .slice(0, 3)
-              .map(
-                (product, index) =>
-                  product && (
-                    <ProductCard key={product.id || index} product={product} />
-                  )
-              )}
+            {latestProducts.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
           </div>
         </div>
       </section>
@@ -137,7 +187,7 @@ const Body = () => {
           {/* Image */}
           <div className="lg:w-1/2">
             <img
-              src="https://placehold.co/600x450"
+              src={homeData?.aboutImage?.url || "https://placehold.co/600x450"}
               alt="Crocheting with yarn and accessories"
               className="rounded-xl shadow-md"
             />
@@ -146,21 +196,17 @@ const Body = () => {
           {/* Text Content */}
           <div className="lg:w-1/2 text-[#444444]">
             <h2 className="text-xl md:text-2xl font-serif font-semibold mb-3 text-[#A084CA]">
-              Our Story
+              {homeData?.aboutTitle || "Our Story"}
             </h2>
             <p className="text-sm md:text-base mb-3 leading-relaxed">
-              Founded in 2015, Varuknit began as a passion for handcrafted yarn
-              creations. From cozy living rooms to nationwide deliveries, we’ve
-              kept the art of yarn alive.
+              {homeData?.aboutDescription1 || "Founded in 2015, Varuknit began as a passion for handcrafted yarn creations. From cozy living rooms to nationwide deliveries, we've kept the art of yarn alive."}
             </p>
             <p className="text-sm md:text-base mb-5 leading-relaxed">
-              Every piece is custom-made with eco-conscious materials, ensuring
-              sustainability without compromising comfort. We believe in craft,
-              community, and care.
+              {homeData?.aboutDescription2 || "Every piece is custom-made with eco-conscious materials, ensuring sustainability without compromising comfort. We believe in craft, community, and care."}
             </p>
-            <button className="bg-[#D97878] hover:bg-[#c76666] text-white text-sm font-medium py-2 px-6 rounded-full transition duration-200">
+            <a href="/about" className="bg-[#D97878] hover:bg-[#c76666] text-white text-sm font-medium py-2 px-6 rounded-full transition duration-200 inline-block">
               Learn More About Us
-            </button>
+            </a>
           </div>
         </div>
       </section>
@@ -170,6 +216,21 @@ const Body = () => {
           <p>More exciting features coming soon!</p>
         </div>
       </section>
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => {
+          setShowLoginModal(false);
+          // Clear login parameter from URL
+          const urlParams = new URLSearchParams(location.search);
+          if (urlParams.has('login')) {
+            urlParams.delete('login');
+            const newSearch = urlParams.toString();
+            navigate(location.pathname + (newSearch ? '?' + newSearch : ''), { replace: true });
+          }
+        }} 
+      />
     </div>
   );
 };

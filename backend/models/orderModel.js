@@ -74,6 +74,10 @@ const orderSchema = new mongoose.Schema({
       type: String,
       required: true,
     }, //status- payment successful or paid
+    screenshot: {
+      type: String,
+      required: false,
+    },
   },
   paidAt: {
     type: Date,
@@ -101,10 +105,24 @@ const orderSchema = new mongoose.Schema({
   },
   orderStatus: {
     type: String,
-    default: "Processing",
+    default: "Order Placed",
+    enum: [
+      "Order Placed",
+      "Verification Pending", 
+      "Verified and Confirmed",
+      "Shipped",
+      "Shipping Delayed",
+      "Delivered",
+      "Cancelled"
+    ],
     required: true,
   },
+  shippedAt: Date,
   deliveredAt: Date,
+  delayNotificationSent: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

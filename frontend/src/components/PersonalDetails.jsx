@@ -1,23 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ShoppingCart,
   Star,
   Heart,
   RotateCcw,
-  Home,
-  ChevronRight,
   Edit3,
-  MoreHorizontal,
-  Truck,
   X,
-  Check,
-  Eye,
-  RefreshCw,
-  Trash2,
 } from "lucide-react";
+import api from "../services/api";
+import { useNotification } from "../context/NotificationContext";
 
-const Profile = () => {
+const PersonalDetails = ({ user }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [stats, setStats] = useState({ orders: 0, reviews: 0, wishlist: 0, returns: 0 });
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    gender: user?.gender || '',
+    address: user?.address || ''
+  });
+  const { addNotification } = useNotification();
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        gender: user.gender || '',
+        address: user.address || ''
+      });
+      fetchUserStats();
+    }
+  }, [user]);
+
+  const fetchUserStats = async () => {
+    try {
+      const [ordersRes, wishlistRes] = await Promise.all([
+        api.getMyOrders(),
+        api.getWishlist()
+      ]);
+      
+      const [ordersData, wishlistData] = await Promise.all([
+        ordersRes.json(),
+        wishlistRes.json()
+      ]);
+      
+      setStats({
+        orders: ordersData.success ? ordersData.orders.length : 0,
+        reviews: 0, // TODO: Implement reviews count
+        wishlist: wishlistData.success ? wishlistData.wishlist.length : 0,
+        returns: 0 // TODO: Implement returns count
+      });
+    } catch (err) {
+      console.error('Error fetching user stats:', err);
+    }
+  };
 
   const handleEditClick = () => {
     setIsEditModalOpen(true);
@@ -25,6 +64,21 @@ const Profile = () => {
 
   const handleCloseModal = () => {
     setIsEditModalOpen(false);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // TODO: Implement profile update API
+      addNotification('Profile updated successfully!', 'success');
+      setIsEditModalOpen(false);
+    } catch (err) {
+      addNotification('Failed to update profile', 'error');
+    }
   };
 
   return (
@@ -48,20 +102,19 @@ const Profile = () => {
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
           <div>
-            <span className="font-semibold">Name:</span> Helene Mayer
+            <span className="font-semibold">Name:</span> {formData.name || 'Not provided'}
           </div>
           <div>
-            <span className="font-semibold">Email:</span> helene@example.com
+            <span className="font-semibold">Email:</span> {formData.email || 'Not provided'}
           </div>
           <div>
-            <span className="font-semibold">Mobile:</span> +91 1234567890
+            <span className="font-semibold">Mobile:</span> {formData.phone || 'Not provided'}
           </div>
           <div>
-            <span className="font-semibold">Gender:</span> Female
+            <span className="font-semibold">Gender:</span> {formData.gender || 'Not provided'}
           </div>
           <div className="col-span-2">
-            <span className="font-semibold">Address:</span> 123 Street Name,
-            City, State - 100001
+            <span className="font-semibold">Address:</span> {formData.address || 'Not provided'}
           </div>
         </div>
       </div>
@@ -69,10 +122,10 @@ const Profile = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          { icon: ShoppingCart, label: "Orders", value: 12 },
-          { icon: Star, label: "Reviews", value: 4 },
-          { icon: Heart, label: "Wishlist", value: 8 },
-          { icon: RotateCcw, label: "Returns", value: 1 },
+          { icon: ShoppingCart, label: "Orders", value: stats.orders },
+          { icon: Star, label: "Reviews", value: stats.reviews },
+          { icon: Heart, label: "Wishlist", value: stats.wishlist },
+          { icon: RotateCcw, label: "Returns", value: stats.returns },
         ].map((item, idx) => (
           <div
             key={idx}
@@ -101,13 +154,7 @@ const Profile = () => {
               Edit Profile
             </h3>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                // TODO: handle form submission logic
-                setIsEditModalOpen(false);
-              }}
-            >
+            <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -115,9 +162,10 @@ const Profile = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue="Helene Mayer"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
                     required
-                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-primary-500"
+                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
                   />
                 </div>
 
@@ -127,9 +175,10 @@ const Profile = () => {
                   </label>
                   <input
                     type="email"
-                    defaultValue="helene@example.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                     required
-                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-primary-500"
+                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
                   />
                 </div>
 
@@ -139,8 +188,9 @@ const Profile = () => {
                   </label>
                   <input
                     type="tel"
-                    defaultValue="+91 1234567890"
-                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-primary-500"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
                   />
                 </div>
 
@@ -149,12 +199,14 @@ const Profile = () => {
                     Gender
                   </label>
                   <select
-                    defaultValue="Female"
-                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900"
+                    value={formData.gender}
+                    onChange={(e) => handleInputChange('gender', e.target.value)}
+                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
                   >
-                    <option>Female</option>
-                    <option>Male</option>
-                    <option>Other</option>
+                    <option value="">Select Gender</option>
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
 
@@ -163,9 +215,11 @@ const Profile = () => {
                     Address
                   </label>
                   <textarea
-                    defaultValue="123 Street Name, City, State - 100001"
-                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
                     rows="3"
+                    placeholder="Enter your address"
                   />
                 </div>
               </div>
@@ -186,4 +240,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default PersonalDetails;

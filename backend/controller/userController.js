@@ -2,8 +2,9 @@ import handleAsyncError from "../middleware/handleAsyncError.js";
 import User from "../models/userModel.js";
 import HandleError from "../utils/handleError.js";
 import { sendToken } from "../utils/jwtToken.js";
-import { sendEmail } from "../utils/sendEmail.js";
+import sendEmail from "../utils/sendEmail.js";
 import crypto from "crypto";
+import { createAdminNotification } from "./notificationController.js";
 
 //Register user
 
@@ -15,6 +16,31 @@ export const registerUser = handleAsyncError(async (req, res, next) => {
     password,
     avatar: { public_id: "This is temp id", url: "This is temp url" },
   });
+
+  // Send welcome email
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Welcome to Varu's Knit Store!",
+      message: `
+        <h2>Welcome to Varu's Knit Store!</h2>
+        <p>Dear ${user.name},</p>
+        <p>Thank you for registering with us!</p>
+        <p>You can now browse our collection of handmade crochet and knitted items.</p>
+        <p>Happy shopping!</p>
+      `
+    });
+  } catch (err) {
+    console.log("Welcome email failed:", err.message);
+  }
+
+  // Create admin notification for new user
+  await createAdminNotification(
+    'new_user',
+    'New User Registered',
+    `New user ${user.name} (${user.email}) has registered`,
+    user._id
+  );
 
   sendToken(user, 201, res);
 });
@@ -39,6 +65,24 @@ export const loginUser = handleAsyncError(async (req, res, next) => {
       return next(new HandleError("Invalid email or password", 400));
     }
   }
+
+  // Send login notification email
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Login Notification - Varu's Knit Store",
+      message: `
+        <h2>Login Notification</h2>
+        <p>Dear ${user.name},</p>
+        <p>You have successfully logged into your account.</p>
+        <p>Login time: ${new Date().toLocaleString()}</p>
+        <p>If this wasn't you, please contact us immediately.</p>
+      `
+    });
+  } catch (err) {
+    console.log("Login notification email failed:", err.message);
+  }
+
   sendToken(user, 200, res);
 });
 
@@ -81,23 +125,21 @@ export const requestPasswordReset = handleAsyncError(async (req, res, next) => {
 
   try {
     await sendEmail({
-      //passing argument as an object with user info as properties
       email: user.email,
-      subject: "Password reset request",
-      message,
+      subject: "Password Reset - Varu's Knit Store",
+      message
     });
 
     res.status(200).json({
       success: true,
-      message: `Email sent to ${user.email} successfully`,
+      message: `Password reset instructions sent to ${user.email}`,
     });
   } catch (error) {
-    user.resetPasswordToken = undefined; //incase mail not received to the user, or token gets expired
+    user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-    await user.save({ validateBeforeSave: false }); // saving the above two in database
-    return next(
-      new HandleError("Email could not be sent. Please try again later", 500)
-    );
+    await user.save({ validateBeforeSave: false });
+    
+    return next(new HandleError("Email could not be sent", 500));
   }
 });
 
@@ -237,14 +279,72 @@ export const updateUserRole = handleAsyncError(async (req, res, next) => {
 //Admin - delete user role
 
 export const deleteUser = handleAsyncError(async (req, res, next) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  const user = await User.findById(req.params.id);
 
   if (!user) {
     return next(new HandleError("User does not exist", 400));
   }
 
+  // Prevent deleting admin users
+  if (user.role === 'admin') {
+    return next(new HandleError("Cannot delete admin users", 403));
+  }
+
+  // Prevent self-deletion
+  if (user._id.toString() === req.user.id) {
+    return next(new HandleError("You cannot delete your own account", 403));
+  }
+
+  await User.findByIdAndDelete(req.params.id);
+
   res.status(200).json({
     success: true,
-    message: "User profile deleted successsfully",
+    message: "User profile deleted successfully",
+  });
+});
+
+// Wishlist functionality
+export const addToWishlist = handleAsyncError(async (req, res, next) => {
+  const { productId } = req.body;
+  console.log('Adding to wishlist:', { userId: req.user.id, productId });
+  
+  const user = await User.findById(req.user.id);
+  
+  if (user.wishlist.includes(productId)) {
+    return next(new HandleError("Product already in wishlist", 400));
+  }
+  
+  user.wishlist.push(productId);
+  await user.save();
+  
+  console.log('Product added to wishlist successfully');
+  res.status(200).json({
+    success: true,
+    message: "Product added to wishlist"
+  });
+});
+
+export const removeFromWishlist = handleAsyncError(async (req, res, next) => {
+  const { productId } = req.params;
+  const user = await User.findById(req.user.id);
+  
+  user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    message: "Product removed from wishlist"
+  });
+});
+
+export const getWishlist = handleAsyncError(async (req, res, next) => {
+  console.log('Getting wishlist for user:', req.user.id);
+  
+  const user = await User.findById(req.user.id).populate('wishlist');
+  
+  console.log('Wishlist found:', user.wishlist.length, 'items');
+  res.status(200).json({
+    success: true,
+    wishlist: user.wishlist
   });
 });

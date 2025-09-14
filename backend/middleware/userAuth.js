@@ -9,19 +9,25 @@ import User from "../models/userModel.js";
 //The user’s data (req.user) is loaded and ready for use.
 
 export const verifyUserAuth = handleAsyncError(async (req, res, next) => {
-  const { token } = req.cookies; //Checks if a token exists in cookies
+  let token = req.cookies.token;
+  
+  // Check Authorization header if no cookie
+  if (!token && req.headers.authorization) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  
   if (!token) {
     return next(
       new HandleError(
         "Authentication is missing, please login to continue",
-        400
+        401
       )
     );
   }
+  
   // verifying token
   const decodedData = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  console.log(decodedData);
-  req.user = await User.findById(decodedData.id); //find user with the token and get user details
+  req.user = await User.findById(decodedData.id);
   next();
 });
 

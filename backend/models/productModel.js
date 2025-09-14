@@ -31,6 +31,28 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
+      source: {
+        type: String,
+        enum: ['cloudinary', 'drive'],
+        default: 'cloudinary'
+      }
+    },
+  ],
+  videos: [
+    {
+      public_id: {
+        type: String,
+        required: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+      source: {
+        type: String,
+        enum: ['cloudinary', 'drive'],
+        default: 'cloudinary'
+      }
     },
   ],
   category: {
@@ -80,7 +102,7 @@ const productSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: "User",
     required: true,
-  }, // referring to logged in user
+  },
   createdAt: {
     type: Date,
     default: Date.now,

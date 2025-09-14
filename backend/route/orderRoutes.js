@@ -12,8 +12,9 @@ import {
 const orderRouter = express.Router();
 
 //logged in user
-orderRouter.route("/new/order").post(verifyUserAuth, createNewOrder);
-orderRouter.route("/user/order").get(verifyUserAuth, getmyOrders);
+orderRouter.route("/order/new").post(verifyUserAuth, createNewOrder);
+orderRouter.route("/orders/me").get(verifyUserAuth, getmyOrders);
+orderRouter.route("/order/:id").get(verifyUserAuth, getsingleOrder);
 
 //admin
 orderRouter
