@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 
 const otpSchema = new mongoose.Schema({
   email: {
-    type: String,
-    required: true
+    type: String
   },
   phone: {
     type: String
@@ -16,6 +15,11 @@ const otpSchema = new mongoose.Schema({
     type: String,
     enum: ['registration', 'login', 'password_reset'],
     required: true
+  },
+  method: {
+    type: String,
+    enum: ['email', 'sms', 'both'],
+    default: 'email'
   },
   expiresAt: {
     type: Date,

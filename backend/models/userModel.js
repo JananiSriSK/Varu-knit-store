@@ -21,6 +21,13 @@ const userSchema = new mongoose.Schema({
     unique: true,
     validate: [validator.isEmail, "Please enter a valid email"],
   },
+  phone: {
+    type: String,
+  },
+  gender: {
+    type: String,
+    enum: ["Male", "Female", "Other", ""],
+  },
   password: {
     type: String,
     required: [true, "Please enter your password"],
@@ -43,6 +50,16 @@ const userSchema = new mongoose.Schema({
   wishlist: [{
     type: mongoose.Schema.ObjectId,
     ref: "Product"
+  }],
+  addresses: [{
+    name: { type: String, required: true },
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    country: { type: String, required: true },
+    pinCode: { type: String, required: true },
+    phoneNo: { type: String, required: true },
+    isDefault: { type: Boolean, default: false }
   }],
   createdAt: {
     type: Date,

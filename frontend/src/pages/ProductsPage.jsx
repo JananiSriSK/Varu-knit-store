@@ -39,10 +39,19 @@ const ProductsPage = () => {
         page: currentPage
       });
       
-      // Add search parameter
+      // Handle smart search
       const searchParam = query.get("search");
       if (searchParam) {
-        params.append('keyword', searchParam);
+        // Use smart search API for better results
+        const searchResponse = await api.smartSearch(searchParam, category);
+        const searchData = await searchResponse.json();
+        
+        if (searchData.success) {
+          setFilteredProducts(searchData.products);
+          setTotalPages(Math.ceil(searchData.count / 12) || 1);
+          setLoading(false);
+          return;
+        }
       }
       
       if (category && category !== "All") {
@@ -53,12 +62,15 @@ const ProductsPage = () => {
         params.append('subcategory', selectedSubcategory);
       }
 
-      const response = await api.getProducts(`?${params}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setFilteredProducts(data.products);
-        setTotalPages(data.totalPages || 1);
+      // Regular product fetching for non-search queries
+      if (!searchParam) {
+        const response = await api.getProducts(`?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setFilteredProducts(data.products);
+          setTotalPages(data.totalPages || 1);
+        }
       }
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -165,22 +177,33 @@ const ProductsPage = () => {
                     Previous
                   </button>
 
-                  {[...Array(totalPages)].map((_, index) => {
-                    const pageNumber = index + 1;
-                    return (
-                      <button
-                        key={pageNumber}
-                        onClick={() => handlePageChange(pageNumber)}
-                        className={`px-4 py-2 border rounded-md ${
-                          currentPage === pageNumber
-                            ? "bg-[#7b5fc4] text-white border-[#7b5fc4]"
-                            : "border-gray-300 hover:bg-gray-100"
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
+                  {(() => {
+                    const pages = [];
+                    const maxVisiblePages = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                    
+                    if (endPage - startPage + 1 < maxVisiblePages) {
+                      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => handlePageChange(i)}
+                          className={`px-4 py-2 border rounded-md ${
+                            currentPage === i
+                              ? "bg-[#7b5fc4] text-white border-[#7b5fc4]"
+                              : "border-gray-300 hover:bg-gray-100"
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+                    return pages;
+                  })()}
 
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}

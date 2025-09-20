@@ -17,7 +17,11 @@ const Checkout = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [paymentScreenshot, setPaymentScreenshot] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [useManualAddress, setUseManualAddress] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
+    name: "",
     address: "",
     city: "",
     state: "",
@@ -54,6 +58,32 @@ const Checkout = () => {
       });
 
       setProducts(productDetails);
+      
+      // Fetch user addresses
+      try {
+        const addressResponse = await api.getAddresses();
+        const addressData = await addressResponse.json();
+        if (addressData.success) {
+          setAddresses(addressData.addresses);
+          // Auto-select default address
+          const defaultAddress = addressData.addresses.find(addr => addr.isDefault);
+          if (defaultAddress && !useManualAddress) {
+            setSelectedAddressId(defaultAddress._id);
+            setShippingInfo({
+              name: defaultAddress.name,
+              address: defaultAddress.address,
+              city: defaultAddress.city,
+              state: defaultAddress.state,
+              country: defaultAddress.country,
+              pinCode: defaultAddress.pinCode,
+              phoneNo: defaultAddress.phoneNo,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching addresses:', err);
+      }
+      
       setLoading(false);
     };
 
@@ -73,6 +103,38 @@ const Checkout = () => {
       ...shippingInfo,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleAddressSelect = (e) => {
+    const addressId = e.target.value;
+    setSelectedAddressId(addressId);
+    
+    if (addressId === "manual") {
+      setUseManualAddress(true);
+      setShippingInfo({
+        name: "",
+        address: "",
+        city: "",
+        state: "",
+        country: "",
+        pinCode: "",
+        phoneNo: "",
+      });
+    } else if (addressId) {
+      setUseManualAddress(false);
+      const selectedAddress = addresses.find(addr => addr._id === addressId);
+      if (selectedAddress) {
+        setShippingInfo({
+          name: selectedAddress.name,
+          address: selectedAddress.address,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          country: selectedAddress.country,
+          pinCode: selectedAddress.pinCode,
+          phoneNo: selectedAddress.phoneNo,
+        });
+      }
+    }
   };
 
   const handleFileChange = (e) => {
@@ -125,6 +187,19 @@ const Checkout = () => {
           "error"
         );
         return;
+      }
+
+      // Save address if requested
+      const saveAddressCheckbox = document.querySelector('input[name="saveAddress"]');
+      if (useManualAddress && saveAddressCheckbox?.checked) {
+        try {
+          await api.addAddress({
+            ...shippingInfo,
+            isDefault: addresses.length === 0
+          });
+        } catch (err) {
+          console.error('Failed to save address:', err);
+        }
       }
 
       const orderData = {
@@ -189,62 +264,119 @@ const Checkout = () => {
                 <h2 className="text-xl font-semibold mb-4">
                   Shipping Information
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    name="address"
-                    placeholder="Address"
-                    value={shippingInfo.address}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
-                  />
-                  <input
-                    type="text"
-                    name="city"
-                    placeholder="City"
-                    value={shippingInfo.city}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
-                  />
-                  <input
-                    type="text"
-                    name="state"
-                    placeholder="State"
-                    value={shippingInfo.state}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
-                  />
-                  <input
-                    type="text"
-                    name="country"
-                    placeholder="Country"
-                    value={shippingInfo.country}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
-                  />
-                  <input
-                    type="text"
-                    name="pinCode"
-                    placeholder="Pin Code"
-                    value={shippingInfo.pinCode}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
-                  />
-                  <input
-                    type="tel"
-                    name="phoneNo"
-                    placeholder="Phone Number"
-                    value={shippingInfo.phoneNo}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
-                  />
-                </div>
+                
+                {/* Address Selection */}
+                {addresses.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Address
+                    </label>
+                    <select
+                      value={selectedAddressId}
+                      onChange={handleAddressSelect}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
+                    >
+                      <option value="">Choose an address</option>
+                      {addresses.map((address) => (
+                        <option key={address._id} value={address._id}>
+                          {address.name} - {address.address}, {address.city}
+                          {address.isDefault && " (Default)"}
+                        </option>
+                      ))}
+                      <option value="manual">Enter new address</option>
+                    </select>
+                  </div>
+                )}
+                
+                {/* Manual Address Form */}
+                {(useManualAddress || addresses.length === 0 || selectedAddressId) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Full Name"
+                      value={shippingInfo.name}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!useManualAddress && selectedAddressId && selectedAddressId !== "manual"}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe] disabled:bg-gray-100"
+                    />
+                    <input
+                      type="tel"
+                      name="phoneNo"
+                      placeholder="Phone Number"
+                      value={shippingInfo.phoneNo}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!useManualAddress && selectedAddressId && selectedAddressId !== "manual"}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe] disabled:bg-gray-100"
+                    />
+                    <textarea
+                      name="address"
+                      placeholder="Address"
+                      value={shippingInfo.address}
+                      onChange={handleInputChange}
+                      required
+                      rows="2"
+                      disabled={!useManualAddress && selectedAddressId && selectedAddressId !== "manual"}
+                      className="col-span-2 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe] disabled:bg-gray-100"
+                    />
+                    <input
+                      type="text"
+                      name="city"
+                      placeholder="City"
+                      value={shippingInfo.city}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!useManualAddress && selectedAddressId && selectedAddressId !== "manual"}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe] disabled:bg-gray-100"
+                    />
+                    <input
+                      type="text"
+                      name="state"
+                      placeholder="State"
+                      value={shippingInfo.state}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!useManualAddress && selectedAddressId && selectedAddressId !== "manual"}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe] disabled:bg-gray-100"
+                    />
+                    <input
+                      type="text"
+                      name="country"
+                      placeholder="Country"
+                      value={shippingInfo.country}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!useManualAddress && selectedAddressId && selectedAddressId !== "manual"}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe] disabled:bg-gray-100"
+                    />
+                    <input
+                      type="text"
+                      name="pinCode"
+                      placeholder="Pin Code"
+                      value={shippingInfo.pinCode}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!useManualAddress && selectedAddressId && selectedAddressId !== "manual"}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe] disabled:bg-gray-100"
+                    />
+                  </div>
+                )}
+                
+                {/* Save Address Option for Manual Entry */}
+                {useManualAddress && (
+                  <div className="mt-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        name="saveAddress"
+                        className="rounded"
+                      />
+                      <span className="text-sm">Save this address to my profile</span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div>

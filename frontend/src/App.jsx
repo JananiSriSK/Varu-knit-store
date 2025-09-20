@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { WishlistProvider } from "./context/WishlistContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import NotificationContainer from "./components/NotificationContainer";
+import Chatbot from "./components/Chatbot";
 import Body from "./pages/Body.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
@@ -22,9 +24,11 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <NotificationProvider>
+        <WishlistProvider>
+          <NotificationProvider>
           <Router>
             <NotificationContainer />
+            <Chatbot />
           <Routes>
             <Route path="/admindashboard" element={
               <ProtectedRoute adminOnly>
@@ -65,7 +69,8 @@ function App() {
             } />
           </Routes>
           </Router>
-        </NotificationProvider>
+          </NotificationProvider>
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   );

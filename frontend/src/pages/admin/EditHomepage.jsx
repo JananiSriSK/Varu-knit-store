@@ -130,33 +130,67 @@ const EditHomepage = () => {
           </button>
         </div>
         
-        {/* Preview Content */}
-        <div className="relative h-70 rounded-b-lg bg-cover bg-center bg-no-repeat shadow-lg" style={{ backgroundImage: `url(${homeData?.bannerImage?.url || '/images/banner4.jpg'})` }}>
-          <div className="px-4 pt-8 pb-10"></div>
+        {/* Header */}
+        <div className="relative h-70 rounded-b-lg bg-cover bg-center bg-no-repeat shadow-lg" style={{ backgroundImage: `url(${homeData?.bannerImagePreview || homeData?.bannerImage?.url || '/images/banner4.jpg'})` }}>
+          <div className="px-4 pt-8 pb-10">
+            <div className="absolute inset-x-0 -bottom-10 mx-auto w-36 rounded-full border-1 border-white shadow-lg">
+              <img className="mx-auto h-auto w-full rounded-full overflow-hidden" src="/images/logo.png" alt="Logo" />
+            </div>
+          </div>
         </div>
-        
-        <div className="mt-16 flex flex-col items-start justify-center space-y-4 py-8 px-4">
+
+        {/* Intro */}
+        <div className="mt-16 flex flex-col items-start justify-center space-y-4 py-8 px-4 sm:flex-row sm:space-y-0 md:justify-between lg:px-0">
           <div className="max-w-lg">
             <h1 className="text-2xl font-bold text-gray-800">{homeData.welcomeTitle}</h1>
             <p className="mt-2 text-gray-600">{homeData.welcomeSubtitle}</p>
           </div>
           <div>
-            <button className="flex whitespace-nowrap rounded-lg bg-[#6f5d6e] px-6 py-2 font-bold text-white">
-              {homeData.chatButtonText}
+            <button className="flex whitespace-nowrap rounded-lg bg-[#6f5d6e] px-6 py-2 font-bold text-white transition hover:translate-y-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 inline h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Chat with us
             </button>
-            <p className="mt-4 flex items-center text-gray-500">{homeData.phoneNumber}</p>
+            <p className="mt-4 flex items-center text-gray-500 sm:justify-end">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 inline h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+              </svg>
+              {homeData.phoneNumber}
+            </p>
           </div>
         </div>
-        
-        <section className="py-10 bg-[#f7f4ff]">
-          <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-10 px-4">
+
+        {/* Collection Section */}
+        <section>
+          <div className="mx-4 my-10 max-w-screen-lg overflow-hidden rounded-xl shadow-lg md:pl-8">
+            <div className="flex flex-col overflow-hidden bg-white sm:flex-row md:h-80">
+              <div className="flex w-full flex-col p-4 sm:w-1/2 sm:p-8 lg:w-3/5">
+                <h2 className="text-xl font-bold text-gray-900 md:text-2xl lg:text-4xl">{homeData.collectionTitle}</h2>
+                <p className="mt-2 text-lg">{homeData.collectionBy}</p>
+                <p className="mt-4 mb-8 max-w-md text-gray-500">{homeData.collectionDescription}</p>
+                <a href="/products" className="group mt-auto flex w-44 cursor-pointer select-none items-center justify-center rounded-md bg-black px-6 py-2 text-white transition">
+                  <span className="group-hover:underline font-bold text-center w-full">Shop now</span>
+                </a>
+              </div>
+              <div className="order-first ml-auto h-48 w-full bg-gray-700 sm:order-none sm:h-auto sm:w-1/2 lg:w-2/5">
+                <img className="h-full w-full object-cover" src={homeData?.collectionImagePreview || homeData?.collectionImage?.url || "https://images.unsplash.com/photo-1599751449128-eb7249c3d6b1?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1169&q=80"} alt={homeData.collectionTitle} loading="lazy" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* About Section */}
+        <section className="py-10 px-4 sm:px-6 lg:px-8 bg-[#f7f4ff] font-sans">
+          <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-10">
             <div className="lg:w-1/2">
-              <img src={homeData?.aboutImage?.url || 'https://placehold.co/600x450'} alt="About" className="rounded-xl shadow-md" />
+              <img src={homeData?.aboutImagePreview || homeData?.aboutImage?.url || "https://placehold.co/600x450"} alt="About" className="rounded-xl shadow-md" />
             </div>
             <div className="lg:w-1/2 text-[#444444]">
               <h2 className="text-xl md:text-2xl font-serif font-semibold mb-3 text-[#A084CA]">{homeData.aboutTitle}</h2>
               <p className="text-sm md:text-base mb-3 leading-relaxed">{homeData.aboutDescription1}</p>
               <p className="text-sm md:text-base mb-5 leading-relaxed">{homeData.aboutDescription2}</p>
+              <a href="/about" className="bg-[#D97878] hover:bg-[#c76666] text-white text-sm font-medium py-2 px-6 rounded-full transition duration-200 inline-block">Learn More About Us</a>
             </div>
           </div>
         </section>

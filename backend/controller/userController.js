@@ -215,11 +215,15 @@ export const updatePassword = handleAsyncError(async (req, res, next) => {
 //profile update
 
 export const updateProfile = handleAsyncError(async (req, res, next) => {
-  const { name, email } = req.body;
+  const { name, email, phone, gender } = req.body;
   const updateUserDetails = {
     name,
     email,
   };
+
+  // Add optional fields if provided
+  if (phone !== undefined) updateUserDetails.phone = phone;
+  if (gender !== undefined) updateUserDetails.gender = gender;
 
   const user = await User.findByIdAndUpdate(req.user.id, updateUserDetails, {
     new: true,
@@ -346,5 +350,99 @@ export const getWishlist = handleAsyncError(async (req, res, next) => {
   res.status(200).json({
     success: true,
     wishlist: user.wishlist
+  });
+});
+
+// Address management
+export const addAddress = handleAsyncError(async (req, res, next) => {
+  const { name, address, city, state, country, pinCode, phoneNo, isDefault } = req.body;
+  
+  const user = await User.findById(req.user.id);
+  
+  // If this is set as default, remove default from other addresses
+  if (isDefault) {
+    user.addresses.forEach(addr => addr.isDefault = false);
+  }
+  
+  user.addresses.push({ name, address, city, state, country, pinCode, phoneNo, isDefault });
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    message: "Address added successfully",
+    addresses: user.addresses
+  });
+});
+
+export const updateAddress = handleAsyncError(async (req, res, next) => {
+  const { addressId } = req.params;
+  const { name, address, city, state, country, pinCode, phoneNo, isDefault } = req.body;
+  
+  const user = await User.findById(req.user.id);
+  const addressIndex = user.addresses.findIndex(addr => addr._id.toString() === addressId);
+  
+  if (addressIndex === -1) {
+    return next(new HandleError("Address not found", 404));
+  }
+  
+  // If this is set as default, remove default from other addresses
+  if (isDefault) {
+    user.addresses.forEach(addr => addr.isDefault = false);
+  }
+  
+  user.addresses[addressIndex] = { ...user.addresses[addressIndex], name, address, city, state, country, pinCode, phoneNo, isDefault };
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    message: "Address updated successfully",
+    addresses: user.addresses
+  });
+});
+
+export const deleteAddress = handleAsyncError(async (req, res, next) => {
+  const { addressId } = req.params;
+  
+  const user = await User.findById(req.user.id);
+  user.addresses = user.addresses.filter(addr => addr._id.toString() !== addressId);
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    message: "Address deleted successfully",
+    addresses: user.addresses
+  });
+});
+
+export const getAddresses = handleAsyncError(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  
+  res.status(200).json({
+    success: true,
+    addresses: user.addresses
+  });
+});
+
+export const setDefaultAddress = handleAsyncError(async (req, res, next) => {
+  const { addressId } = req.params;
+  
+  const user = await User.findById(req.user.id);
+  
+  // Remove default from all addresses
+  user.addresses.forEach(addr => addr.isDefault = false);
+  
+  // Set new default
+  const address = user.addresses.find(addr => addr._id.toString() === addressId);
+  if (!address) {
+    return next(new HandleError("Address not found", 404));
+  }
+  
+  address.isDefault = true;
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    message: "Default address updated",
+    addresses: user.addresses
   });
 });

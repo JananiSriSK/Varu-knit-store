@@ -10,6 +10,9 @@ import content from "./route/contentRoutes.js";
 import test from "./route/testRoute.js";
 import notification from "./route/notificationRoute.js";
 import otp from "./route/otpRoute.js";
+import ai from "./route/aiRoutes.js";
+import debug from "./route/debugRoute.js";
+import favoriteCollection from "./route/favoriteCollectionRoutes.js";
 
 const app = express();
 
@@ -37,6 +40,9 @@ app.use("/api/v1", content);
 app.use("/api/v1", test);
 app.use("/api/v1", notification);
 app.use("/api/v1", otp);
+app.use("/api/v1", ai);
+app.use("/api/v1", debug);
+app.use("/api/v1", favoriteCollection);
 
 app.use(errorHandleMiddleware);
 

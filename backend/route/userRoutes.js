@@ -15,6 +15,11 @@ import {
   addToWishlist,
   removeFromWishlist,
   getWishlist,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+  getAddresses,
+  setDefaultAddress,
 } from "../controller/userController.js";
 import { roleBasedAccess, verifyUserAuth } from "../middleware/userAuth.js";
 
@@ -43,5 +48,10 @@ userRouter
 // Wishlist routes
 userRouter.route("/wishlist").get(verifyUserAuth, getWishlist).post(verifyUserAuth, addToWishlist);
 userRouter.route("/wishlist/:productId").delete(verifyUserAuth, removeFromWishlist);
+
+// Address routes
+userRouter.route("/addresses").get(verifyUserAuth, getAddresses).post(verifyUserAuth, addAddress);
+userRouter.route("/addresses/:addressId").put(verifyUserAuth, updateAddress).delete(verifyUserAuth, deleteAddress);
+userRouter.route("/addresses/:addressId/default").put(verifyUserAuth, setDefaultAddress);
 
 export default userRouter;

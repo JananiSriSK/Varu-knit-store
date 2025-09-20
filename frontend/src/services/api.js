@@ -65,6 +65,11 @@ const api = {
   getProducts: (params = '') =>
     fetch(`${API_BASE}/products${params}`),
 
+  getAdminProducts: () =>
+    fetch(`${API_BASE}/admin/products`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+
   getProduct: (id) =>
     fetch(`${API_BASE}/product/${id}`),
 
@@ -237,6 +242,83 @@ const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(otpData)
+    }),
+
+  // Address endpoints
+  getAddresses: () =>
+    fetch(`${API_BASE}/addresses`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+
+  addAddress: (addressData) =>
+    fetch(`${API_BASE}/addresses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(addressData)
+    }),
+
+  updateAddress: (addressId, addressData) =>
+    fetch(`${API_BASE}/addresses/${addressId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(addressData)
+    }),
+
+  deleteAddress: (addressId) =>
+    fetch(`${API_BASE}/addresses/${addressId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+
+  setDefaultAddress: (addressId) =>
+    fetch(`${API_BASE}/addresses/${addressId}/default`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+
+  // AI/ML endpoints
+  getRecommendations: (productId) =>
+    fetch(`${API_BASE}/recommendations/${productId}`),
+
+  getPersonalizedRecommendations: () =>
+    fetch(`${API_BASE}/recommendations/personalized`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+
+  smartSearch: (query, category = '') =>
+    fetch(`${API_BASE}/search?query=${encodeURIComponent(query)}&category=${category}`),
+
+  getSearchSuggestions: (query) =>
+    fetch(`${API_BASE}/search/suggestions?query=${encodeURIComponent(query)}`),
+
+  chatbot: (message, userId = null) =>
+    fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, userId })
+    }),
+
+  getFAQ: () =>
+    fetch(`${API_BASE}/faq`),
+
+  // Favorite Collections endpoints
+  getFavoriteCollections: () =>
+    fetch(`${API_BASE}/favorite-collections`),
+
+  setFavoriteCollections: (productIds) =>
+    fetch(`${API_BASE}/admin/favorite-collections`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ productIds })
     })
 };
 

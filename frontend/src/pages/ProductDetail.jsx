@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
 import BackButton from "../components/BackButton";
 import ImageZoomModal from "../components/ImageZoomModal";
+import ProductRecommendations from "../components/ProductRecommendations";
 import api from "../services/api";
 
 const ProductDetail = () => {
@@ -23,6 +24,7 @@ const ProductDetail = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [showZoomModal, setShowZoomModal] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -34,6 +36,23 @@ const ProductDetail = () => {
           setProduct(data.product);
           if (data.product.size?.length > 0) {
             setSelectedSize(data.product.size[0]);
+          }
+        }
+        
+        // Check if user has purchased this product
+        if (isAuthenticated) {
+          try {
+            const ordersResponse = await api.getMyOrders();
+            const ordersData = await ordersResponse.json();
+            if (ordersData.success) {
+              const purchased = ordersData.orders.some(order => 
+                order.orderItems.some(item => item.product === id) &&
+                ['Delivered', 'Verified and Confirmed'].includes(order.orderStatus)
+              );
+              setHasPurchased(purchased);
+            }
+          } catch (err) {
+            console.error('Error checking purchase history:', err);
           }
         }
       } catch (err) {
@@ -163,13 +182,29 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div>
-            <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+            <div className="bg-white rounded-lg shadow-md p-4 mb-4 relative">
               <img
                 src={product.image?.[activeImage]?.url || "/placeholder.jpg"}
                 alt={product.name}
                 className="w-full h-96 object-contain bg-white rounded-lg cursor-pointer"
                 onClick={() => setShowZoomModal(true)}
               />
+              {product.image?.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setActiveImage(activeImage > 0 ? activeImage - 1 : product.image.length - 1)}
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition"
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={() => setActiveImage(activeImage < product.image.length - 1 ? activeImage + 1 : 0)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition"
+                  >
+                    →
+                  </button>
+                </>
+              )}
             </div>
 
             {product.image?.length > 1 && (
@@ -310,7 +345,7 @@ const ProductDetail = () => {
         <div className="mt-12 bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-[#444444]">Reviews</h2>
-            {isAuthenticated && (
+            {isAuthenticated && hasPurchased && (
               <button
                 onClick={() => setShowReviewForm(!showReviewForm)}
                 className="bg-[#e1cffb] text-[#444444] px-4 py-2 rounded-lg hover:bg-[#b89ae8] transition"
@@ -318,10 +353,13 @@ const ProductDetail = () => {
                 Write Review
               </button>
             )}
+            {isAuthenticated && !hasPurchased && (
+              <p className="text-sm text-gray-500">Only customers who have purchased this product can write reviews</p>
+            )}
           </div>
 
           {/* Review Form */}
-          {showReviewForm && (
+          {showReviewForm && hasPurchased && (
             <form
               onSubmit={handleSubmitReview}
               className="mb-6 p-4 border rounded-lg"
@@ -394,6 +432,7 @@ const ProductDetail = () => {
                       ))}
                     </div>
                     <span className="ml-2 font-semibold">{review.name}</span>
+                    <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Verified Purchase</span>
                   </div>
                   <p className="text-gray-600">{review.comment}</p>
                 </div>
@@ -405,6 +444,12 @@ const ProductDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Product Recommendations */}
+        <ProductRecommendations 
+          productId={product._id} 
+          title="Frequently Bought Together" 
+        />
 
         {/* Image Zoom Modal */}
         <ImageZoomModal

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Upload, Eye, EyeOff } from 'lucide-react';
+import { FaWhatsapp, FaInstagram, FaEnvelope, FaFacebook } from 'react-icons/fa';
 import { useNotification } from '../../context/NotificationContext';
 import api from '../../services/api';
 
@@ -84,7 +85,7 @@ const EditFooter = () => {
       </div>
 
       {isPreview ? (
-        <div className="bg-[#f7f4ff] text-[#444444] p-6 rounded-lg border border-[#e1cffb]">
+        <div className="bg-gray-100 text-gray-800 p-6 rounded-lg border border-gray-300">
           <div className="container mx-auto text-center space-y-4">
             <h2 className="text-2xl font-bold">Contact Us</h2>
             <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-base">
@@ -95,10 +96,18 @@ const EditFooter = () => {
               <p>Follow us on Instagram: {footerData.instagram}</p>
             </div>
             <div className="flex justify-center space-x-6 text-2xl">
-              <span className="text-green-600">📱</span>
-              <span className="text-pink-600">📷</span>
-              <span className="text-red-600">✉️</span>
-              <span className="text-blue-600">📘</span>
+              <a href={footerData.whatsappLink} className="text-green-600 hover:text-green-700">
+                <FaWhatsapp />
+              </a>
+              <a href={footerData.instagramLink} className="text-pink-600 hover:text-pink-700">
+                <FaInstagram />
+              </a>
+              <a href={`mailto:${footerData.email}`} className="text-red-600 hover:text-red-700">
+                <FaEnvelope />
+              </a>
+              <a href={footerData.facebookLink} className="text-blue-600 hover:text-blue-700">
+                <FaFacebook />
+              </a>
             </div>
             <div className="text-sm text-gray-900 mt-4">
               <p>{footerData.aboutText}</p>

@@ -2,7 +2,7 @@ import handleAsyncError from "../middleware/handleAsyncError.js";
 import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
 import Notification from "../models/notificationModel.js";
-import APIFunctionality from "../utils/apiFunctionality.js";
+import APIFunctionality from "../utils/APIFunctionality.js";
 import HandleError from "../utils/handleError.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { convertDriveShareLink, validateDriveUrl } from "../utils/driveUtils.js";
@@ -122,37 +122,47 @@ export const createProducts = handleAsyncError(async (req, res) => {
 //get all products
 
 export const getAllProducts = handleAsyncError(async (req, res, next) => {
-  console.log(req.query);
-  const resultsPerPage = 3;
-  const apiFeatures = new APIFunctionality(Product.find(), req.query)
-    .search()
-    .filter();
-  // .pagination(resultsPerPage);
+  try {
+    console.log('getAllProducts called with query:', req.query);
+    const resultsPerPage = 12;
+    const page = Number(req.query.page) || 1;
+    
+    // Get filtered query for counting
+    const countQuery = new APIFunctionality(Product.find(), req.query)
+      .search()
+      .filter();
+    
+    const productCount = await countQuery.query.countDocuments();
+    const totalPages = Math.ceil(productCount / resultsPerPage);
 
-  const filteredQuery = apiFeatures.query.clone();
-  const productCount = await filteredQuery.countDocuments();
+    if (page > totalPages && productCount > 0) {
+      return next(new HandleError("This page does not exist", 404));
+    }
 
-  const totalPages = Math.ceil(productCount / resultsPerPage);
-  const products = await apiFeatures.query;
-  const page = Number(req.query.page) || 1;
+    // Get paginated products
+    const apiFeatures = new APIFunctionality(Product.find(), req.query)
+      .search()
+      .filter()
+      .pagination(resultsPerPage);
 
-  if (page > totalPages && productCount > 0) {
-    return next(new HandleError("This page does not exist", 404));
+    const products = await apiFeatures.query;
+    console.log('Products found:', products.length);
+
+    res.status(200).json({
+      success: true,
+      products,
+      resultsPerPage,
+      productCount,
+      totalPages,
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error('getAllProducts error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch products'
+    });
   }
-
-  apiFeatures.pagination(resultsPerPage);
-
-  if (!products || products.length == 0) {
-    return next(new HandleError("No product found", 404));
-  }
-  res.status(200).json({
-    success: "true",
-    products,
-    resultsPerPage,
-    productCount,
-    totalPages,
-    currentPage: page,
-  });
 });
 
 //get products by subcategory

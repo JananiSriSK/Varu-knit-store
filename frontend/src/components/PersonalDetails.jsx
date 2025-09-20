@@ -6,12 +6,18 @@ import {
   RotateCcw,
   Edit3,
   X,
+  Plus,
+  Trash2,
+  MapPin,
 } from "lucide-react";
 import api from "../services/api";
 import { useNotification } from "../context/NotificationContext";
 
 const PersonalDetails = ({ user }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [addresses, setAddresses] = useState([]);
   const [stats, setStats] = useState({ orders: 0, reviews: 0, wishlist: 0, returns: 0 });
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -19,6 +25,16 @@ const PersonalDetails = ({ user }) => {
     phone: user?.phone || '',
     gender: user?.gender || '',
     address: user?.address || ''
+  });
+  const [addressFormData, setAddressFormData] = useState({
+    name: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    pinCode: '',
+    phoneNo: '',
+    isDefault: false
   });
   const { addNotification } = useNotification();
 
@@ -32,6 +48,17 @@ const PersonalDetails = ({ user }) => {
         address: user.address || ''
       });
       fetchUserStats();
+      fetchAddresses();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || ''
+      }));
     }
   }, [user]);
 
@@ -58,6 +85,18 @@ const PersonalDetails = ({ user }) => {
     }
   };
 
+  const fetchAddresses = async () => {
+    try {
+      const response = await api.getAddresses();
+      const data = await response.json();
+      if (data.success) {
+        setAddresses(data.addresses);
+      }
+    } catch (err) {
+      console.error('Error fetching addresses:', err);
+    }
+  };
+
   const handleEditClick = () => {
     setIsEditModalOpen(true);
   };
@@ -73,12 +112,113 @@ const PersonalDetails = ({ user }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // TODO: Implement profile update API
-      addNotification('Profile updated successfully!', 'success');
-      setIsEditModalOpen(false);
+      const response = await api.updateProfile({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        gender: formData.gender
+      });
+      const data = await response.json();
+      if (data.success) {
+        addNotification('Profile updated successfully!', 'success');
+        setIsEditModalOpen(false);
+        // Update local state with new user data
+        window.location.reload(); // Refresh to get updated user data
+      } else {
+        addNotification(data.message || 'Failed to update profile', 'error');
+      }
     } catch (err) {
       addNotification('Failed to update profile', 'error');
     }
+  };
+
+  const handleAddressInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setAddressFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleAddressSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let response;
+      if (editingAddress) {
+        response = await api.updateAddress(editingAddress._id, addressFormData);
+      } else {
+        response = await api.addAddress(addressFormData);
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setAddresses(data.addresses);
+        addNotification(editingAddress ? 'Address updated successfully' : 'Address added successfully', 'success');
+        handleCloseAddressModal();
+      } else {
+        addNotification(data.message || 'Failed to save address', 'error');
+      }
+    } catch (err) {
+      addNotification('Failed to save address', 'error');
+    }
+  };
+
+  const handleEditAddress = (address) => {
+    setEditingAddress(address);
+    setAddressFormData({
+      name: address.name,
+      address: address.address,
+      city: address.city,
+      state: address.state,
+      country: address.country,
+      pinCode: address.pinCode,
+      phoneNo: address.phoneNo,
+      isDefault: address.isDefault
+    });
+    setShowAddressModal(true);
+  };
+
+  const handleDeleteAddress = async (addressId) => {
+    if (!confirm('Are you sure you want to delete this address?')) return;
+    
+    try {
+      const response = await api.deleteAddress(addressId);
+      const data = await response.json();
+      if (data.success) {
+        setAddresses(data.addresses);
+        addNotification('Address deleted successfully', 'success');
+      }
+    } catch (err) {
+      addNotification('Failed to delete address', 'error');
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId) => {
+    try {
+      const response = await api.setDefaultAddress(addressId);
+      const data = await response.json();
+      if (data.success) {
+        setAddresses(data.addresses);
+        addNotification('Default address updated', 'success');
+      }
+    } catch (err) {
+      addNotification('Failed to update default address', 'error');
+    }
+  };
+
+  const handleCloseAddressModal = () => {
+    setShowAddressModal(false);
+    setEditingAddress(null);
+    setAddressFormData({
+      name: '',
+      address: '',
+      city: '',
+      state: '',
+      country: '',
+      pinCode: '',
+      phoneNo: '',
+      isDefault: false
+    });
   };
 
   return (
@@ -102,25 +242,22 @@ const PersonalDetails = ({ user }) => {
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
           <div>
-            <span className="font-semibold">Name:</span> {formData.name || 'Not provided'}
+            <span className="font-semibold">Name:</span> {user?.name || 'Not provided'}
           </div>
           <div>
-            <span className="font-semibold">Email:</span> {formData.email || 'Not provided'}
+            <span className="font-semibold">Email:</span> {user?.email || 'Not provided'}
           </div>
           <div>
-            <span className="font-semibold">Mobile:</span> {formData.phone || 'Not provided'}
+            <span className="font-semibold">Mobile:</span> {user?.phone || 'Not provided'}
           </div>
           <div>
-            <span className="font-semibold">Gender:</span> {formData.gender || 'Not provided'}
-          </div>
-          <div className="col-span-2">
-            <span className="font-semibold">Address:</span> {formData.address || 'Not provided'}
+            <span className="font-semibold">Gender:</span> {user?.gender || 'Not provided'}
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-6">
         {[
           { icon: ShoppingCart, label: "Orders", value: stats.orders },
           { icon: Star, label: "Reviews", value: stats.reviews },
@@ -138,6 +275,77 @@ const PersonalDetails = ({ user }) => {
             <span className="text-sm font-semibold">{item.value}</span>
           </div>
         ))}
+      </div>
+
+      {/* Address Management Section */}
+      <div className="mb-6 rounded-xl bg-white p-6 shadow-md">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-[#444]">My Addresses</h3>
+            <p className="text-sm text-gray-500">
+              Manage your delivery addresses
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAddressModal(true)}
+            className="flex items-center gap-2 bg-[#A084CA] text-white px-3 py-1.5 rounded-lg hover:bg-[#8B6BB1] cursor-pointer text-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Address
+          </button>
+        </div>
+
+        {addresses.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">
+            No addresses saved. Add your first address to get started.
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {addresses.map((address) => (
+              <div key={address._id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-4 w-4 text-[#A084CA]" />
+                      <span className="font-medium text-sm">{address.name}</span>
+                      {address.isDefault && (
+                        <span className="bg-[#A084CA] text-white text-xs px-2 py-1 rounded">Default</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      {address.address}, {address.city}, {address.state} - {address.pinCode}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {address.country} | Phone: {address.phoneNo}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {!address.isDefault && (
+                      <button
+                        onClick={() => handleSetDefaultAddress(address._id)}
+                        className="text-xs text-[#A084CA] hover:underline cursor-pointer"
+                      >
+                        Set Default
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleEditAddress(address)}
+                      className="text-[#A084CA] hover:text-[#8B6BB1] cursor-pointer"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAddress(address._id)}
+                      className="text-red-500 hover:text-red-700 cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
@@ -232,6 +440,116 @@ const PersonalDetails = ({ user }) => {
                   Save Changes
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Address Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md bg-white rounded-lg p-6 shadow-lg relative">
+            <button
+              onClick={handleCloseAddressModal}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-700"
+            >
+              <X className="h-6 w-6 cursor-pointer" />
+            </button>
+            
+            <h3 className="text-lg font-semibold mb-4">
+              {editingAddress ? 'Edit Address' : 'Add New Address'}
+            </h3>
+
+            <form onSubmit={handleAddressSubmit} className="space-y-4">
+              <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                value={addressFormData.name}
+                onChange={handleAddressInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A084CA]"
+              />
+              
+              <textarea
+                name="address"
+                placeholder="Address"
+                value={addressFormData.address}
+                onChange={handleAddressInputChange}
+                required
+                rows="2"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A084CA]"
+              />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  name="city"
+                  placeholder="City"
+                  value={addressFormData.city}
+                  onChange={handleAddressInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A084CA]"
+                />
+                <input
+                  type="text"
+                  name="state"
+                  placeholder="State"
+                  value={addressFormData.state}
+                  onChange={handleAddressInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A084CA]"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  name="country"
+                  placeholder="Country"
+                  value={addressFormData.country}
+                  onChange={handleAddressInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A084CA]"
+                />
+                <input
+                  type="text"
+                  name="pinCode"
+                  placeholder="Pin Code"
+                  value={addressFormData.pinCode}
+                  onChange={handleAddressInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A084CA]"
+                />
+              </div>
+              
+              <input
+                type="tel"
+                name="phoneNo"
+                placeholder="Phone Number"
+                value={addressFormData.phoneNo}
+                onChange={handleAddressInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A084CA]"
+              />
+              
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="isDefault"
+                  checked={addressFormData.isDefault}
+                  onChange={handleAddressInputChange}
+                  className="rounded"
+                />
+                <span className="text-sm">Set as default address</span>
+              </label>
+
+              <button
+                type="submit"
+                className="w-full bg-[#A084CA] text-white py-2 rounded-lg hover:bg-[#8B6BB1] cursor-pointer"
+              >
+                {editingAddress ? 'Update Address' : 'Add Address'}
+              </button>
             </form>
           </div>
         </div>

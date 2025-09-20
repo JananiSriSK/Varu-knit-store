@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, X, User, Package, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const NotificationBell = ({ isAdmin = false }) => {
@@ -7,6 +8,7 @@ const NotificationBell = ({ isAdmin = false }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const notificationRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchNotifications();
@@ -52,6 +54,71 @@ const NotificationBell = ({ isAdmin = false }) => {
     }
   };
 
+  const handleNotificationClick = async (notification) => {
+    // Mark as read first
+    if (!notification.read) {
+      await markAsRead(notification._id);
+    }
+    
+    // Close dropdown
+    setShowDropdown(false);
+    
+    // Navigate based on notification type and user role
+    switch (notification.type) {
+      case 'new_user':
+        if (isAdmin) {
+          navigate('/admindashboard?tab=users');
+        }
+        break;
+      case 'new_order':
+        if (isAdmin) {
+          navigate('/admindashboard?tab=orders');
+        } else {
+          navigate('/my-profile?tab=orders');
+        }
+        break;
+      case 'order_status_update':
+        if (isAdmin) {
+          navigate('/admindashboard?tab=orders');
+        } else {
+          navigate('/my-profile?tab=orders');
+        }
+        break;
+      case 'order_delayed':
+        if (isAdmin) {
+          navigate('/admindashboard?tab=orders');
+        } else {
+          navigate('/my-profile?tab=orders');
+        }
+        break;
+      case 'low_stock':
+        if (isAdmin) {
+          navigate('/admindashboard?tab=products');
+        }
+        break;
+      case 'product_review':
+        if (isAdmin) {
+          navigate('/admindashboard?tab=products');
+        } else {
+          // Navigate to the specific product if productId is available
+          if (notification.productId) {
+            navigate(`/product/${notification.productId}`);
+          } else {
+            navigate('/my-profile?tab=orders');
+          }
+        }
+        break;
+      default:
+        // Default navigation based on user role
+        if (isAdmin) {
+          navigate('/admindashboard');
+        } else {
+          navigate('/my-profile');
+        }
+        break;
+    }
+  };
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'new_user': return <User className="h-4 w-4 text-blue-500" />;
@@ -92,10 +159,10 @@ const NotificationBell = ({ isAdmin = false }) => {
               notifications.map((notification) => (
                 <div
                   key={notification._id}
-                  className={`p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${
+                  className={`p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${
                     !notification.read ? 'bg-blue-50' : ''
                   }`}
-                  onClick={() => markAsRead(notification._id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start space-x-3">
                     {getNotificationIcon(notification.type)}

@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
-import { Heart, ShoppingCart, Trash2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext";
 import { useNotification } from "../context/NotificationContext";
+import ProductCard from "../components/ProductCard";
+import ConfirmModal from "../components/ConfirmModal";
 import api from "../services/api";
 
 const Wishlist = () => {
   const { user } = useAuth();
-  const { addToCart } = useCart();
+
   const { addNotification } = useNotification();
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [productToRemove, setProductToRemove] = useState(null);
 
   useEffect(() => {
     fetchWishlist();
@@ -31,29 +34,27 @@ const Wishlist = () => {
     }
   };
 
-  const removeFromWishlist = async (productId) => {
+  const handleRemoveClick = (productId) => {
+    setProductToRemove(productId);
+    setShowConfirmModal(true);
+  };
+  
+  const confirmRemove = async () => {
     try {
-      const response = await api.removeFromWishlist(productId);
+      const response = await api.removeFromWishlist(productToRemove);
       const data = await response.json();
       if (data.success) {
-        setWishlist(wishlist.filter((item) => item._id !== productId));
+        setWishlist(wishlist.filter((item) => item._id !== productToRemove));
+        addNotification("Item removed from wishlist", "success");
       }
     } catch (err) {
       console.error("Error removing from wishlist:", err);
     }
+    setShowConfirmModal(false);
+    setProductToRemove(null);
   };
 
-  const handleAddToCart = (product) => {
-    addToCart({
-      product: product._id,
-      name: product.name,
-      price: product.price,
-      image: product.image[0]?.url,
-      size: product.size[0],
-      quantity: 1,
-    });
-    addNotification("Added to cart!", "success");
-  };
+
 
   if (loading) {
     return (
@@ -94,51 +95,22 @@ const Wishlist = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlist.map((product) => (
-            <div
-              key={product._id}
-              className="bg-white rounded-lg shadow-md overflow-hidden"
-            >
-              <div className="relative">
-                <img
-                  src={product.image?.[0]?.url || "/placeholder.jpg"}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                />
-                <button
-                  onClick={() => removeFromWishlist(product._id)}
-                  className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition"
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </button>
-              </div>
-
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-800 mb-2">
-                  {product.name}
-                </h3>
-                <p className="text-[#7b5fc4] font-bold text-lg mb-3">
-                  ${product.price}
-                </p>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="flex-1 bg-[#e1cffb] text-[#444444] py-2 px-3 rounded-lg hover:bg-[#b89ae8] transition flex items-center justify-center gap-2"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    Add to Cart
-                  </button>
-                  <Link
-                    to={`/product/${product._id}`}
-                    className="px-3 py-2 border-none text-[#7b5fc4] rounded-lg hover:bg-[#7b5fc4]  hover:text-white transition"
-                  >
-                    View
-                  </Link>
-                </div>
-              </div>
-            </div>
+            <ProductCard 
+              key={product._id} 
+              product={product} 
+              isWishlistView={true}
+              onRemoveFromWishlist={handleRemoveClick}
+            />
           ))}
         </div>
+        
+        <ConfirmModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={confirmRemove}
+          title="Remove from Wishlist"
+          message="Are you sure you want to remove this item from your wishlist?"
+        />
       </div>
     </div>
   );

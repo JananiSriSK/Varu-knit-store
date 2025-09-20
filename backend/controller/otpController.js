@@ -12,10 +12,18 @@ const generateOTP = () => {
 
 // Send OTP
 export const sendOTP = handleAsyncError(async (req, res, next) => {
-  const { email, phone, type = 'registration' } = req.body;
+  const { email, phone, type = 'registration', method = 'email' } = req.body;
 
   if (!email && !phone) {
     return next(new HandleError("Email or phone number is required", 400));
+  }
+
+  if (method === 'sms' && !phone) {
+    return next(new HandleError("Phone number is required for SMS", 400));
+  }
+
+  if (method === 'email' && !email) {
+    return next(new HandleError("Email is required for email OTP", 400));
   }
 
   const otp = generateOTP();
@@ -33,29 +41,42 @@ export const sendOTP = handleAsyncError(async (req, res, next) => {
     email,
     phone,
     otp,
-    type
+    type,
+    method
   });
 
+  let sentVia = [];
+
   // Send OTP via email
-  if (email) {
-    const message = `Your OTP for ${type} is: ${otp}. Valid for 10 minutes.`;
-    
+  if ((method === 'email' || method === 'both') && email) {
     try {
       await sendEmail({
         email,
         subject: `Varu's Knits - OTP Verification`,
-        message
+        message: `Your OTP for ${type} is: ${otp}. Valid for 10 minutes.`
       });
+      sentVia.push('email');
     } catch (error) {
       console.error('Email sending failed:', error);
-      // For development, still allow OTP creation even if email fails
-      console.log(`OTP for ${email}: ${otp}`);
+    }
+  }
+
+  // Send OTP via SMS
+  if ((method === 'sms' || method === 'both') && phone) {
+    try {
+      const { sendOTPSMS } = await import('../utils/sendSMS.js');
+      await sendOTPSMS(phone, otp);
+      sentVia.push('SMS');
+    } catch (error) {
+      console.error('SMS sending failed:', error);
+      console.log(`SMS OTP for ${phone}: ${otp}`);
     }
   }
 
   res.status(200).json({
     success: true,
-    message: "OTP sent successfully",
+    message: `OTP sent successfully via ${sentVia.join(' and ')}`,
+    sentVia,
     // For development only - remove in production
     otp: process.env.NODE_ENV === 'development' ? otp : undefined
   });

@@ -12,12 +12,13 @@ import {
   getSubcategory,
 } from "../controller/productController.js";
 import { roleBasedAccess, verifyUserAuth } from "../middleware/userAuth.js";
+import { cacheProducts, clearCache } from "../middleware/cache.js";
 
 const productRouter = express.Router();
 
 //everyone can view products (even if not logged in)
-productRouter.route("/products").get(getAllProducts); //get all products or list of products based on category, sub category = keyword, pages, limits
-productRouter.route("/product/:id").get(getProductDetails); //get single product based on id
+productRouter.route("/products").get(cacheProducts(3600), getAllProducts); //get all products or list of products based on category, sub category = keyword, pages, limits
+productRouter.route("/product/:id").get(cacheProducts(7200), getProductDetails); //get single product based on id
 productRouter.route("/reviews").get(getProductReviews);
 productRouter.route("/subcategories").get(getSubcategory); //get the subcategories for filtering in frontend
 
@@ -27,7 +28,7 @@ productRouter.route("/review").put(verifyUserAuth, createProductReview);
 //admin actions
 productRouter
   .route("/admin/product/new")
-  .post(verifyUserAuth, roleBasedAccess("admin"), createProducts);
+  .post(verifyUserAuth, roleBasedAccess("admin"), clearCache("products:*"), createProducts);
 
 productRouter
   .route("/admin/products")
@@ -35,8 +36,8 @@ productRouter
 
 productRouter
   .route("/admin/product/:id")
-  .put(verifyUserAuth, roleBasedAccess("admin"), updateProduct)
-  .delete(verifyUserAuth, roleBasedAccess("admin"), deleteProduct);
+  .put(verifyUserAuth, roleBasedAccess("admin"), clearCache("products:*"), updateProduct)
+  .delete(verifyUserAuth, roleBasedAccess("admin"), clearCache("products:*"), deleteProduct);
 
 productRouter
   .route("/admin/reviews")

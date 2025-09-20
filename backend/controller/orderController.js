@@ -38,8 +38,9 @@ export const createNewOrder = handleAsyncError(async (req, res, next) => {
     order._id
   );
 
-  // Send order confirmation email
+  // Send order confirmation notifications (email + SMS)
   try {
+    // Email notification
     await sendEmail({
       email: req.user.email,
       subject: "Order Placed Successfully - Varu's Knit Store",
@@ -53,8 +54,19 @@ export const createNewOrder = handleAsyncError(async (req, res, next) => {
         <p>Thank you for shopping with us!</p>
       `
     });
+    
+    // SMS notification
+    if (req.user.phone) {
+      try {
+        const { sendOrderSMS } = await import('../utils/sendSMS.js');
+        const orderId = order._id.toString().slice(-8);
+        await sendOrderSMS(req.user.phone, 'Processing', orderId);
+      } catch (smsError) {
+        console.log("SMS notification failed:", smsError.message);
+      }
+    }
   } catch (err) {
-    console.log("Email notification failed:", err.message);
+    console.log("Notification failed:", err.message);
   }
 
   res.status(201).json({
@@ -143,7 +155,7 @@ export const updateOrderStatus = handleAsyncError(async (req, res, next) => {
 
   await order.save({ validateBeforeSave: false });
 
-  // Send status update email
+  // Send status update notifications (email + SMS)
   try {
     const user = await User.findById(order.user);
     let emailSubject = "";
@@ -187,6 +199,7 @@ export const updateOrderStatus = handleAsyncError(async (req, res, next) => {
       `;
     }
     
+    // Send email notification
     if (emailSubject) {
       await sendEmail({
         email: user.email,
@@ -194,8 +207,19 @@ export const updateOrderStatus = handleAsyncError(async (req, res, next) => {
         message: emailMessage
       });
     }
+    
+    // Send SMS notification
+    if (user.phone && order.orderStatus !== "Processing") {
+      try {
+        const { sendOrderSMS } = await import('../utils/sendSMS.js');
+        const orderId = order._id.toString().slice(-8);
+        await sendOrderSMS(user.phone, order.orderStatus, orderId);
+      } catch (smsError) {
+        console.log("SMS notification failed:", smsError.message);
+      }
+    }
   } catch (err) {
-    console.log("Email notification failed:", err.message);
+    console.log("Notification failed:", err.message);
   }
 
   res.status(200).json({

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   LogOut,
   BarChart3,
@@ -9,6 +9,8 @@ import {
   Home,
   Edit,
   Settings,
+  MessageCircle,
+  Heart,
 } from "lucide-react";
 import NotificationBell from "../../components/NotificationBell";
 import logo from "../../images/logo.png";
@@ -18,6 +20,8 @@ import Orders from "./OrdersPanel.jsx";
 import EditHomepage from "./EditHomepage.jsx";
 import EditFooter from "./EditFooter.jsx";
 import Products from "./EditProducts.jsx";
+import ChatbotManagement from "./ChatbotManagement.jsx";
+import FavoriteCollections from "./FavoriteCollections.jsx";
 import api from "../../services/api";
 import { useNotification } from "../../context/NotificationContext";
 
@@ -29,6 +33,7 @@ const AdminLayout = () => {
   const [loading, setLoading] = useState(false);
   const { user, dispatch, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addNotification } = useNotification();
 
   useEffect(() => {
@@ -39,13 +44,21 @@ const AdminLayout = () => {
     fetchAdminData();
   }, [user, navigate]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
   const fetchAdminData = async () => {
     setLoading(true);
     try {
       const [ordersRes, usersRes, productsRes] = await Promise.all([
         api.getAllOrders(),
         api.getAllUsers(),
-        api.getProducts(),
+        api.getAdminProducts(),
       ]);
 
       const [ordersData, usersData, productsData] = await Promise.all([
@@ -90,6 +103,10 @@ const AdminLayout = () => {
         return <EditFooter />;
       case "products":
         return <Products products={products} onUpdate={fetchAdminData} />;
+      case "chatbot":
+        return <ChatbotManagement />;
+      case "favorites":
+        return <FavoriteCollections products={products} />;
       default:
         return <Stats orders={orders} users={users} products={products} />;
     }
@@ -102,6 +119,8 @@ const AdminLayout = () => {
     { id: "products", label: "Products", icon: Edit },
     { id: "edit-homepage", label: "Homepage", icon: Home },
     { id: "edit-footer", label: "Footer", icon: Settings },
+    { id: "favorites", label: "Favorites", icon: Heart },
+    { id: "chatbot", label: "Chatbot", icon: MessageCircle },
   ];
 
   if (loading) {

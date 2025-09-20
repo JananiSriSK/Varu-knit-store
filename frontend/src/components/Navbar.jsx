@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, User, ShoppingCart, Heart, Home } from "lucide-react";
+import { User, ShoppingCart, Heart, Home } from "lucide-react";
+import SmartSearchBar from "./SmartSearchBar";
 import logo from "../images/logo.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -12,7 +13,6 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [wishlistCount, setWishlistCount] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const profileDropdownRef = useRef(null);
@@ -25,8 +25,14 @@ const Navbar = () => {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const category = queryParams.get("category") || "";
-    setActiveCategory(category);
-  }, [location.search]);
+    
+    // Only set active category if we're on products page or have a category parameter
+    if (location.pathname === "/products" || category) {
+      setActiveCategory(category);
+    } else {
+      setActiveCategory(""); // Clear selection on homepage
+    }
+  }, [location.search, location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -113,24 +119,9 @@ const Navbar = () => {
 
             {/* Right Icons */}
             <div className="flex items-center space-x-3 relative">
-              {/* Search */}
-              <div className="relative hidden sm:block">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      navigate(`/products?search=${searchQuery}`);
-                    }
-                  }}
-                  className="w-40 md:w-52 pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#DBDDFF] bg-white"
-                />
-                <Search 
-                  onClick={() => navigate(`/products?search=${searchQuery}`)}
-                  className="cursor-pointer absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" 
-                />
+              {/* Smart Search */}
+              <div className="hidden sm:block">
+                <SmartSearchBar className="w-40 md:w-52" />
               </div>
 
               {/* Home button for non-admin users */}
@@ -322,7 +313,7 @@ const Navbar = () => {
                     key={category.value}
                     onClick={() => handleCategoryClick(category.value)}
                     className={`text-sm whitespace-nowrap cursor-pointer transition-colors ${
-                      activeCategory === category.value
+                      activeCategory === category.value && location.pathname === "/products"
                         ? "text-[#A084CA] font-semibold"
                         : "text-[#555] hover:text-[#A084CA]"
                     }`}

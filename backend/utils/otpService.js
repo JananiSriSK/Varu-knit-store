@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import sendEmail from './sendEmail.js';
+import { sendOTPSMS } from './sendSMS.js';
 
 // Generate 6-digit OTP
 export const generateOTP = () => {
@@ -28,14 +29,32 @@ export const sendEmailOTP = async (email, otp, name) => {
   }
 };
 
-// Send OTP via SMS (placeholder - requires Twilio setup)
+// Send OTP via SMS using Twilio
 export const sendSMSOTP = async (phone, otp) => {
   try {
-    // For now, just log the OTP (in production, use Twilio)
-    console.log(`SMS OTP for ${phone}: ${otp}`);
+    await sendOTPSMS(phone, otp);
     return true;
   } catch (error) {
     console.error('Error sending SMS OTP:', error);
     return false;
   }
+};
+
+// Send OTP via both email and SMS
+export const sendOTP = async (email, phone, otp, name, method = 'email') => {
+  const results = { email: false, sms: false };
+  
+  if (method === 'email' || method === 'both') {
+    if (email) {
+      results.email = await sendEmailOTP(email, otp, name);
+    }
+  }
+  
+  if (method === 'sms' || method === 'both') {
+    if (phone) {
+      results.sms = await sendSMSOTP(phone, otp);
+    }
+  }
+  
+  return results;
 };
