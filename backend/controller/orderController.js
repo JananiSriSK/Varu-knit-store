@@ -180,12 +180,18 @@ export const updateOrderStatus = handleAsyncError(async (req, res, next) => {
         <p>Your order is on its way to you!</p>
       `;
     } else if (order.orderStatus === "Delivered") {
+      const reviewLinks = order.orderItems.map(item => 
+        `<li><a href="http://localhost:5173/product/${item.product}" style="color: #7b5fc4; text-decoration: none;">Review ${item.name}</a></li>`
+      ).join('');
+      
       emailSubject = "Order Delivered - Varu's Knit Store";
       emailMessage = `
         <h2>Order Delivered</h2>
         <p>Dear ${user.name},</p>
         <p>Your order has been delivered successfully!</p>
         <p><strong>Order ID:</strong> ${order._id}</p>
+        <p>We'd love to hear your feedback! Please review your products:</p>
+        <ul>${reviewLinks}</ul>
         <p>Thank you for shopping with us!</p>
       `;
     } else if (order.orderStatus === "Cancelled") {

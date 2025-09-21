@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { X, User, Package, MapPin, CreditCard } from "lucide-react";
+import { X, User, Package, MapPin, CreditCard, Star } from "lucide-react";
+import ReviewModal from "./ReviewModal";
 
 
 
@@ -26,6 +27,7 @@ const getStatusStyle = (status) => {
 
 const RecentOrders = ({ orders = [], loading = false }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [reviewModal, setReviewModal] = useState({ isOpen: false, product: null });
 
   if (loading) {
     return (
@@ -40,33 +42,45 @@ const RecentOrders = ({ orders = [], loading = false }) => {
   return (
     <section className="p-6 md:p-8 max-w-6xl mx-auto">
       <h2 className="mb-6 text-2xl font-serif text-[#444444]">Recent Orders</h2>
-      <div className="overflow-x-auto rounded-xl bg-white shadow-md">
-        <table className="min-w-full text-sm text-left text-gray-700">
-          <thead className="bg-[#f7f4ff] text-[#444444] text-sm uppercase">
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white rounded-lg shadow-lg border border-gray-200/50">
+          <thead className="bg-gradient-to-r from-[#e8e0ff] to-[#f0ebff]">
             <tr>
-              <th className="px-6 py-4">Order ID</th>
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4">Items</th>
-              <th className="px-6 py-4">Total (₹)</th>
-              <th className="px-6 py-4">Status</th>
+              <th className="text-left py-4 px-6 font-semibold text-gray-700">Order ID</th>
+              <th className="text-left py-4 px-6 font-semibold text-gray-700">Date</th>
+              <th className="text-left py-4 px-6 font-semibold text-gray-700">Items</th>
+              <th className="text-left py-4 px-6 font-semibold text-gray-700">Total (₹)</th>
+              <th className="text-left py-4 px-6 font-semibold text-gray-700">Status</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((order) => (
               <tr 
                 key={order._id} 
-                className="hover:bg-[#f7f4ff] cursor-pointer transition-colors"
+                className="border-t border-gray-100/70 hover:bg-gray-50/50 transition-colors duration-200 cursor-pointer"
                 onClick={() => setSelectedOrder(order)}
               >
-                <td className="px-6 py-4 font-medium">{order._id.slice(-8)}</td>
-                <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString()}</td>
-                <td className="px-6 py-4">{order.orderItems.length}</td>
-                <td className="px-6 py-4">₹{order.totalPrice}</td>
-                <td className="px-6 py-4">
+                <td className="py-4 px-6 text-gray-800 font-mono text-sm">{order._id.slice(-8)}</td>
+                <td className="py-4 px-6 text-gray-800">{new Date(order.createdAt).toLocaleDateString()}</td>
+                <td className="py-4 px-6 text-gray-600">{order.orderItems.length}</td>
+                <td className="py-4 px-6 text-gray-800 font-semibold">₹{order.totalPrice}</td>
+                <td className="py-4 px-6">
                   <span
-                    className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${getStatusStyle(
-                      order.orderStatus
-                    )}`}
+                    className={`inline-block px-3 py-1 text-xs rounded-full font-medium ${
+                      order.orderStatus === "Order Placed"
+                        ? "bg-blue-100 text-blue-700 border border-blue-200"
+                        : order.orderStatus === "Verification Pending"
+                        ? "bg-orange-100 text-orange-700 border border-orange-200"
+                        : order.orderStatus === "Verified and Confirmed"
+                        ? "bg-purple-100 text-purple-700 border border-purple-200"
+                        : order.orderStatus === "Shipped"
+                        ? "bg-indigo-100 text-indigo-700 border border-indigo-200"
+                        : order.orderStatus === "Shipping Delayed"
+                        ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                        : order.orderStatus === "Delivered"
+                        ? "bg-green-100 text-green-700 border border-green-200"
+                        : "bg-red-100 text-red-700 border border-red-200"
+                    }`}
                   >
                     {order.orderStatus}
                   </span>
@@ -75,7 +89,7 @@ const RecentOrders = ({ orders = [], loading = false }) => {
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                <td colSpan="5" className="text-center py-8 text-gray-500">
                   No recent orders.
                 </td>
               </tr>
@@ -131,11 +145,22 @@ const RecentOrders = ({ orders = [], loading = false }) => {
                     <h3 className="font-semibold mb-3">Order Items</h3>
                     {selectedOrder.orderItems.map((item, index) => (
                       <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium">{item.name}</p>
                           <p className="text-sm text-gray-600">Size: {item.size} | Qty: {item.quantity}</p>
                         </div>
-                        <p className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</p>
+                        <div className="flex items-center gap-3">
+                          <p className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</p>
+                          {selectedOrder.orderStatus === "Delivered" && (
+                            <button
+                              onClick={() => setReviewModal({ isOpen: true, product: item })}
+                              className="flex items-center gap-1 px-3 py-1 bg-[#7b5fc4] text-white text-xs rounded-lg hover:bg-[#6b4fb4] transition-colors"
+                            >
+                              <Star className="h-3 w-3" />
+                              Review
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -176,6 +201,13 @@ const RecentOrders = ({ orders = [], loading = false }) => {
           </div>
         </div>
       )}
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={reviewModal.isOpen}
+        onClose={() => setReviewModal({ isOpen: false, product: null })}
+        product={reviewModal.product}
+      />
     </section>
   );
 };

@@ -52,9 +52,10 @@ const UsersList = ({ users = [], onUpdate }) => {
       <h2 className="text-2xl font-semibold text-gray-700 mb-6">
         Manage Users
       </h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white rounded-lg shadow-lg border border-gray-200/50">
-          <thead className="bg-gradient-to-r from-[#f7f4ff] to-[#faf8ff]">
+      <div className="bg-white rounded-xl shadow-xl p-6 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+          <thead className="bg-gradient-to-r from-[#e8e0ff] to-[#f0ebff]">
             <tr>
               <th className="text-left py-4 px-6 font-semibold text-gray-700">Name</th>
               <th className="text-left py-4 px-6 font-semibold text-gray-700">Email</th>
@@ -98,7 +99,8 @@ const UsersList = ({ users = [], onUpdate }) => {
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   );

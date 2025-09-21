@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Home } from "lucide-react";
+import { Home, Filter } from "lucide-react";
 import ProductCard from "../components/ProductCard.jsx";
 import api from "../services/api";
 
@@ -19,6 +19,7 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Reset page when search changes
   useEffect(() => {
@@ -101,56 +102,77 @@ const ProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f7f4ff] py-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#7b5fc4]"></div>
       </div>
     );
   }
 
   return (
-    <div className="pt-10 max-w-7xl mx-auto px-4 min-h-screen bg-[#f7f4ff]">
-      <div className="flex items-center gap-4 mb-6">
-        <a href="/" className="p-2 hover:bg-white rounded-full transition">
-          <Home className="h-5 w-5 text-[#7b5fc4]" />
-        </a>
-        <h2 className="text-xl font-semibold">
-          {query.get("search") ? `Search Results for "${query.get("search")}"` : `Category: ${category || "All Products"}`}
-        </h2>
-      </div>
-      
-      <div className="flex gap-6">
-        {/* Sidebar Filter */}
-        <div className="w-2/12 rounded-lg p-4 shadow-lg bg-white h-fit">
-          <h3 className="font-semibold text-lg mb-4">Filters</h3>
-          <ul className="space-y-2 text-sm">
-            <li
-              className={`cursor-pointer p-2 rounded ${
-                selectedSubcategory === "All"
-                  ? "font-bold text-[#7b5fc4] bg-[#e1cffb]"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-              onClick={() => setSelectedSubcategory("All")}
-            >
-              All
-            </li>
-            {subcategories.map((sub, idx) => (
-              <li
-                key={idx}
-                className={`cursor-pointer p-2 rounded ${
-                  selectedSubcategory === sub
-                    ? "font-bold text-[#7b5fc4] bg-[#e1cffb]"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-                onClick={() => setSelectedSubcategory(sub)}
-              >
-                {sub}
-              </li>
-            ))}
-          </ul>
+    <div className="pt-10 max-w-7xl mx-auto px-4 min-h-screen bg-gray-50">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <a href="/" className="p-2 hover:bg-white rounded-full transition">
+            <Home className="h-5 w-5 text-[#7b5fc4]" />
+          </a>
+          <h2 className="text-xl font-semibold">
+            {query.get("search") ? `Search Results for "${query.get("search")}"` : `Category: ${category || "All Products"}`}
+          </h2>
         </div>
+        
+        {/* Filter Dropdown Menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+          </button>
+          
+          {showFilters && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              <div className="p-4">
+                <h3 className="font-semibold text-sm mb-3">Subcategories</h3>
+                <ul className="space-y-1 text-sm">
+                  <li
+                    className={`cursor-pointer p-2 rounded ${
+                      selectedSubcategory === "All"
+                        ? "font-bold text-[#7b5fc4] bg-[#e1cffb]"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                    onClick={() => {
+                      setSelectedSubcategory("All");
+                      setShowFilters(false);
+                    }}
+                  >
+                    All
+                  </li>
+                  {subcategories.map((sub, idx) => (
+                    <li
+                      key={idx}
+                      className={`cursor-pointer p-2 rounded ${
+                        selectedSubcategory === sub
+                          ? "font-bold text-[#7b5fc4] bg-[#e1cffb]"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                      onClick={() => {
+                        setSelectedSubcategory(sub);
+                        setShowFilters(false);
+                      }}
+                    >
+                      {sub}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
-        {/* Products Grid */}
-        <div className="w-10/12">
+      {/* Products Grid */}
+      <div className="w-full">
           {filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-gray-600 text-lg">No products found.</p>
@@ -217,7 +239,6 @@ const ProductsPage = () => {
             </>
           )}
         </div>
-      </div>
     </div>
   );
 };

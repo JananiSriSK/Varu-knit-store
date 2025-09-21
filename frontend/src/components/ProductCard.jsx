@@ -50,22 +50,8 @@ const ProductCard = ({ product, isWishlistView = false, onRemoveFromWishlist }) 
       return;
     }
     
-    // If multiple sizes available, show size selection modal
-    if (product.size && product.size.length > 1) {
-      setShowSizeModal(true);
-      return;
-    }
-    
-    // Add to cart with product data
-    addToCart({
-      product: product._id || product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image?.[0]?.url || product.image1,
-      quantity: 1,
-      size: product.size?.[0] || 'One Size'
-    });
-    addNotification('Product added to cart!', 'success');
+    // Always show size selection modal
+    setShowSizeModal(true);
   };
   
   const handleSizeSelection = () => {
@@ -215,14 +201,23 @@ const ProductCard = ({ product, isWishlistView = false, onRemoveFromWishlist }) 
       
       {/* Size Selection Modal */}
       {showSizeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowSizeModal(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Select Size</h3>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50" onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowSizeModal(false);
+        }}>
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-lg border border-gray-200/50" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-2 text-center">Please select a size</h3>
+            <p className="text-sm text-gray-600 mb-4 text-center">before adding this product to your cart</p>
             <div className="grid grid-cols-3 gap-2 mb-4">
               {product.size?.map((size) => (
                 <button
                   key={size}
-                  onClick={() => setSelectedSize(size)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedSize(size);
+                  }}
                   className={`p-2 border rounded text-sm ${
                     selectedSize === size 
                       ? 'border-[#6f5d6e] bg-[#6f5d6e] text-white' 
@@ -235,13 +230,21 @@ const ProductCard = ({ product, isWishlistView = false, onRemoveFromWishlist }) 
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowSizeModal(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowSizeModal(false);
+                }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSizeSelection}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSizeSelection();
+                }}
                 className="flex-1 px-4 py-2 bg-[#6f5d6e] text-white rounded hover:bg-[#5c4b5a]"
               >
                 Add to Cart

@@ -8,7 +8,7 @@ import LoginModal from "../components/LoginModal";
 import api from "../services/api";
 
 const Cart = () => {
-  const { items, updateQuantity, removeFromCart } = useCart();
+  const { items, updateQuantity, updateSize, removeFromCart } = useCart();
   const { user } = useAuth();
   const [products, setProducts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -34,7 +34,7 @@ const Cart = () => {
     return sum + (item.price || 0) * item.quantity;
   }, 0);
   
-  const shipping = subtotal > 100 ? 0 : 10;
+  const shipping = subtotal >= 999 ? 0 : 100;
   const total = subtotal + shipping;
 
   if (loading) {
@@ -98,10 +98,10 @@ const Cart = () => {
                       <select
                         value={item.size}
                         onChange={(e) => {
-                          // Update size logic would go here
+                          updateSize(item.product, item.size, e.target.value);
                           addNotification(`Size updated to ${e.target.value}`, 'success');
                         }}
-                        className="bg-[#e1cffb] text-[#7b5fc4] px-2 py-1 rounded-md text-xs border-none focus:outline-none focus:ring-2 focus:ring-[#7b5fc4]"
+                        className="bg-transparent border border-gray-300 text-gray-700 px-2 py-1 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#7b5fc4]"
                       >
                         <option value="XS">XS</option>
                         <option value="S">S</option>
@@ -153,7 +153,7 @@ const Cart = () => {
                   <span>{shipping === 0 ? 'Free' : `₹${shipping.toFixed(2)}`}</span>
                 </div>
                 {shipping === 0 && (
-                  <p className="text-green-600 text-sm">Free shipping on orders over ₹100!</p>
+                  <p className="text-green-600 text-sm">Free shipping on orders over ₹999!</p>
                 )}
                 <hr className="my-3" />
                 <div className="flex justify-between font-semibold text-lg">

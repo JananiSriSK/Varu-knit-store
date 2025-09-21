@@ -57,7 +57,7 @@ const Body = () => {
 
   const fetchLatestProducts = async () => {
     try {
-      const response = await api.getProducts("?sort=-createdAt&limit=3");
+      const response = await api.getLatestCollections();
       const data = await response.json();
       if (data.success) {
         setLatestProducts(data.products);

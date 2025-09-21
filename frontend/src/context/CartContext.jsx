@@ -45,6 +45,16 @@ const cartReducer = (state, action) => {
         )
       };
       
+    case 'UPDATE_SIZE':
+      return {
+        ...state,
+        items: state.items.map(item =>
+          item.product === action.payload.product && item.size === action.payload.oldSize
+            ? { ...item, size: action.payload.newSize }
+            : item
+        )
+      };
+      
     case 'CLEAR_CART':
       return { ...state, items: [] };
       
@@ -163,16 +173,54 @@ export const CartProvider = ({ children }) => {
 
   const updateQuantity = (product, size, quantity) => {
     dispatch({ type: 'UPDATE_QUANTITY', payload: { product, size, quantity } });
-    const token = localStorage.getItem('token');
-    if (token) {
-      const userId = JSON.parse(atob(token.split('.')[1])).id;
-      const newItems = state.items.map(item =>
-        item.product === product && item.size === size
-          ? { ...item, quantity }
-          : item
-      );
-      localStorage.setItem(`cart_${userId}`, JSON.stringify(newItems));
-    }
+    
+    setTimeout(() => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const userId = JSON.parse(atob(token.split('.')[1])).id;
+        const currentItems = JSON.parse(localStorage.getItem(`cart_${userId}`)) || [];
+        const newItems = currentItems.map(item =>
+          item.product === product && item.size === size
+            ? { ...item, quantity }
+            : item
+        );
+        localStorage.setItem(`cart_${userId}`, JSON.stringify(newItems));
+      } else {
+        const guestCart = JSON.parse(localStorage.getItem('guestCart')) || [];
+        const newItems = guestCart.map(item =>
+          item.product === product && item.size === size
+            ? { ...item, quantity }
+            : item
+        );
+        localStorage.setItem('guestCart', JSON.stringify(newItems));
+      }
+    }, 0);
+  };
+
+  const updateSize = (product, oldSize, newSize) => {
+    dispatch({ type: 'UPDATE_SIZE', payload: { product, oldSize, newSize } });
+    
+    setTimeout(() => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const userId = JSON.parse(atob(token.split('.')[1])).id;
+        const currentItems = JSON.parse(localStorage.getItem(`cart_${userId}`)) || [];
+        const newItems = currentItems.map(item =>
+          item.product === product && item.size === oldSize
+            ? { ...item, size: newSize }
+            : item
+        );
+        localStorage.setItem(`cart_${userId}`, JSON.stringify(newItems));
+      } else {
+        const guestCart = JSON.parse(localStorage.getItem('guestCart')) || [];
+        const newItems = guestCart.map(item =>
+          item.product === product && item.size === oldSize
+            ? { ...item, size: newSize }
+            : item
+        );
+        localStorage.setItem('guestCart', JSON.stringify(newItems));
+      }
+    }, 0);
   };
 
   const clearCart = () => {
@@ -207,6 +255,7 @@ export const CartProvider = ({ children }) => {
       addToCart,
       removeFromCart,
       updateQuantity,
+      updateSize,
       clearCart,
       syncGuestDataOnLogin
     }}>

@@ -418,18 +418,7 @@ const PersonalDetails = ({ user }) => {
                   </select>
                 </div>
 
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Address
-                  </label>
-                  <textarea
-                    value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
-                    rows="3"
-                    placeholder="Enter your address"
-                  />
-                </div>
+
               </div>
 
               <div className="mt-6 flex justify-end">

@@ -73,9 +73,10 @@ const OrdersPanel = ({ orders = [], onUpdate }) => {
           </select>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white rounded-lg shadow-lg border border-gray-200/50">
-          <thead className="bg-gradient-to-r from-[#f7f4ff] to-[#faf8ff]">
+      <div className="bg-white rounded-xl shadow-xl p-6 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+          <thead className="bg-gradient-to-r from-[#e8e0ff] to-[#f0ebff]">
             <tr>
               <th className="text-left py-4 px-6 font-semibold text-gray-700">Order ID</th>
               <th className="text-left py-4 px-6 font-semibold text-gray-700">User</th>
@@ -136,7 +137,7 @@ const OrdersPanel = ({ orders = [], onUpdate }) => {
                         }
                       }}
                       disabled={updating === order._id || order.orderStatus === "Delivered" || order.orderStatus === "Cancelled"}
-                      className="text-xs px-2 py-1 border rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-xs px-2 py-1 border border-gray-200/50 rounded-lg bg-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
                     >
                       <option value="Order Placed">Order Placed</option>
                       <option value="Verification Pending">Verification Pending</option>
@@ -166,7 +167,8 @@ const OrdersPanel = ({ orders = [], onUpdate }) => {
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
       
       {/* Order Details Modal */}
@@ -275,7 +277,7 @@ const OrdersPanel = ({ orders = [], onUpdate }) => {
                         }
                       }}
                       disabled={updating === selectedOrder._id || selectedOrder.orderStatus === "Delivered" || selectedOrder.orderStatus === "Cancelled"}
-                      className="w-full px-3 py-2 border rounded-lg bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-gray-200/50 rounded-lg bg-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#7b5fc4] focus:border-transparent"
                     >
                       <option value="Order Placed">Order Placed</option>
                       <option value="Verification Pending">Verification Pending</option>

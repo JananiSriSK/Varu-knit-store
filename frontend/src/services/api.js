@@ -298,7 +298,7 @@ const api = {
     fetch(`${API_BASE}/search/suggestions?query=${encodeURIComponent(query)}`),
 
   chatbot: (message, userId = null) =>
-    fetch(`${API_BASE}/chat`, {
+    fetch(`http://localhost:5001/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, userId })
@@ -313,6 +313,20 @@ const api = {
 
   setFavoriteCollections: (productIds) =>
     fetch(`${API_BASE}/admin/favorite-collections`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ productIds })
+    }),
+
+  // Latest Collections endpoints
+  getLatestCollections: () =>
+    fetch(`${API_BASE}/latest-collections`),
+
+  setLatestCollections: (productIds) =>
+    fetch(`${API_BASE}/admin/latest-collections`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

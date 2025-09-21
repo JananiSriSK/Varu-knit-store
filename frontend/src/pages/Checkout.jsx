@@ -95,7 +95,7 @@ const Checkout = () => {
     return sum + (product?.price || 0) * item.quantity;
   }, 0);
 
-  const shipping = subtotal > 1000 ? 0 : 100;
+  const shipping = subtotal >= 999 ? 0 : 100;
   const total = subtotal + shipping;
 
   const handleInputChange = (e) => {
@@ -387,7 +387,7 @@ const Checkout = () => {
                     1. Scan the QR code below or use UPI ID: varuknits@paytm
                   </p>
                   <p className="text-sm text-gray-600 mb-2">
-                    2. Pay the total amount: ${total.toFixed(2)}
+                    2. Pay the total amount: ₹{total.toFixed(2)}
                   </p>
                   <p className="text-sm text-gray-600">
                     3. Upload the payment screenshot below
@@ -455,7 +455,7 @@ const Checkout = () => {
                       </p>
                     </div>
                     <p className="font-semibold">
-                      ${(product.price * item.quantity).toFixed(2)}
+                      ₹{(product.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
                 );
@@ -465,17 +465,17 @@ const Checkout = () => {
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>
-                  {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
+                  {shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}
                 </span>
               </div>
               <div className="flex justify-between font-semibold text-lg border-t pt-2">
                 <span>Total</span>
-                <span className="text-[#7b5fc4]">${total.toFixed(2)}</span>
+                <span className="text-[#7b5fc4]">₹{total.toFixed(2)}</span>
               </div>
             </div>
           </div>

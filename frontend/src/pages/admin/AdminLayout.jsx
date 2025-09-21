@@ -17,11 +17,10 @@ import logo from "../../images/logo.png";
 import Stats from "./DashboardStats.jsx";
 import Users from "./UsersList.jsx";
 import Orders from "./OrdersPanel.jsx";
-import EditHomepage from "./EditHomepage.jsx";
-import EditFooter from "./EditFooter.jsx";
 import Products from "./EditProducts.jsx";
 import ChatbotManagement from "./ChatbotManagement.jsx";
 import FavoriteCollections from "./FavoriteCollections.jsx";
+import ContentManagement from "./ContentManagement.jsx";
 import api from "../../services/api";
 import { useNotification } from "../../context/NotificationContext";
 
@@ -97,10 +96,8 @@ const AdminLayout = () => {
         return <Users users={users} onUpdate={fetchAdminData} />;
       case "orders":
         return <Orders orders={orders} onUpdate={fetchAdminData} />;
-      case "edit-homepage":
-        return <EditHomepage />;
-      case "edit-footer":
-        return <EditFooter />;
+      case "content":
+        return <ContentManagement />;
       case "products":
         return <Products products={products} onUpdate={fetchAdminData} />;
       case "chatbot":
@@ -117,8 +114,7 @@ const AdminLayout = () => {
     { id: "users", label: "Users", icon: UsersIcon },
     { id: "orders", label: "Orders", icon: Package },
     { id: "products", label: "Products", icon: Edit },
-    { id: "edit-homepage", label: "Homepage", icon: Home },
-    { id: "edit-footer", label: "Footer", icon: Settings },
+    { id: "content", label: "Content", icon: Settings },
     { id: "favorites", label: "Favorites", icon: Heart },
     { id: "chatbot", label: "Chatbot", icon: MessageCircle },
   ];
