@@ -8,23 +8,26 @@ A full-stack ecommerce application for handmade crochet and knitted items with R
 - User authentication with OTP verification
 - Product catalog with smart search and filtering
 - AI-powered product recommendations
-- Shopping cart with real-time updates
+- Shopping cart with real-time updates and size selection
 - Product detail pages with reviews and ratings
 - QR code payment with screenshot upload
 - User profile and order management
-- Admin dashboard with analytics
+- Admin dashboard with modern card-style UI
+- Wishlist functionality with heart icons
+- Favorite and latest collections management
 - Responsive design with TailwindCSS
 - Real-time notifications
 
 ### Backend (Node.js + Express)
 - JWT authentication with password reset
-- Redis caching for performance optimization
+- Redis caching for performance optimization (70-80% faster)
 - Product management with Cloudinary integration
 - Order processing with payment verification
 - User management with role-based access
-- Review and rating system
-- Email notifications with SMTP
-- Auto-start service management
+- Review and rating system with email integration
+- Dual notification system (Email + SMS via Twilio)
+- Auto-start service management (Redis + ML)
+- Favorite and latest collections API
 - Comprehensive error handling
 
 ### AI/ML Service (Flask)
@@ -180,6 +183,7 @@ After running the seed script:
 - **Individual products:** 2 hour cache
 - **Auto-invalidation:** On product updates
 - **Performance gain:** 70-80% faster API responses
+- **Graceful fallback:** Works without Redis if unavailable
 
 ### Auto-Start Services
 - **Single command startup:** `npm start` in backend
@@ -187,10 +191,16 @@ After running the seed script:
 - **ML service integration:** Auto-starts with backend
 - **Process management:** Proper cleanup on exit
 
+### UI/UX Enhancements
+- **Modern card design:** Admin tables with smooth borders and shadows
+- **Consistent styling:** Unified color scheme and component design
+- **Interactive elements:** Size selection modals, filter dropdowns
+- **Responsive layout:** Mobile-first design approach
+
 ## API Endpoints
 
 ### Authentication
-- `POST /api/v1/register` - User registration
+- `POST /api/v1/register` - User registration with OTP
 - `POST /api/v1/login` - User login
 - `GET /api/v1/logout` - User logout
 - `POST /api/v1/password/forgot` - Forgot password
@@ -198,9 +208,21 @@ After running the seed script:
 
 ### Products
 - `GET /api/v1/products` - Get all products (with pagination and filters)
+- `GET /api/v1/admin/products` - Get all products for admin (no pagination)
 - `GET /api/v1/product/:id` - Get single product
 - `GET /api/v1/subcategories` - Get subcategories by category
 - `PUT /api/v1/review` - Create/update product review
+
+### Collections
+- `GET /api/v1/favorite-collections` - Get favorite collections
+- `PUT /api/v1/admin/favorite-collections` - Set favorite collections
+- `GET /api/v1/latest-collections` - Get latest collections
+- `PUT /api/v1/admin/latest-collections` - Set latest collections
+
+### Wishlist
+- `GET /api/v1/wishlist` - Get user wishlist
+- `POST /api/v1/wishlist` - Add to wishlist
+- `DELETE /api/v1/wishlist/:productId` - Remove from wishlist
 
 ### Orders
 - `POST /api/v1/order/new` - Create new order
@@ -209,6 +231,7 @@ After running the seed script:
 
 ### Admin Routes
 - `GET /api/v1/admin/users` - Get all users
+- `DELETE /api/v1/admin/user/:id` - Delete user
 - `GET /api/v1/admin/orders` - Get all orders
 - `PUT /api/v1/admin/order/:id` - Update order status
 - `POST /api/v1/admin/product/new` - Create product
@@ -219,11 +242,13 @@ After running the seed script:
 
 The application uses QR code payment system:
 
-1. Customer adds items to cart and proceeds to checkout
-2. QR code is displayed for payment (UPI: varuknits@paytm)
-3. Customer pays and uploads payment screenshot
-4. Admin verifies payment and confirms order
-5. Order status is updated accordingly
+1. Customer adds items to cart with size selection
+2. Free shipping for orders ≥₹999, ₹100 shipping for orders <₹999
+3. QR code is displayed for payment (UPI: varuknits@paytm)
+4. Customer pays and uploads payment screenshot
+5. Admin verifies payment and confirms order
+6. Dual notifications sent (Email + SMS) for order updates
+7. Review system activated after delivery
 
 ## Project Structure
 
