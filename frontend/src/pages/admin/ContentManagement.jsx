@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import EditHomepage from "./EditHomepage";
 import EditFooter from "./EditFooter";
+import PaymentSettings from "./PaymentSettings";
 
 const ContentManagement = () => {
   const [activeSection, setActiveSection] = useState("homepage");
@@ -33,11 +34,22 @@ const ContentManagement = () => {
         >
           Footer
         </button>
+        <button
+          onClick={() => setActiveSection("payment")}
+          className={`px-4 py-2 rounded-lg transition-colors ${
+            activeSection === "payment"
+              ? "bg-[#7b5fc4] text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Payment Settings
+        </button>
       </div>
 
       {/* Content */}
       {activeSection === "homepage" && <EditHomepage />}
       {activeSection === "footer" && <EditFooter />}
+      {activeSection === "payment" && <PaymentSettings />}
     </div>
   );
 };

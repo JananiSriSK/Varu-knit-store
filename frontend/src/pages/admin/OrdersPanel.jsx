@@ -7,7 +7,10 @@ const OrdersPanel = ({ orders = [], onUpdate }) => {
   const [updating, setUpdating] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [sortFilter, setSortFilter] = useState('recent');
+
   const { addNotification } = useNotification();
+
+
 
   const updateStatus = async (orderId, newStatus) => {
     setUpdating(orderId);
@@ -58,6 +61,7 @@ const OrdersPanel = ({ orders = [], onUpdate }) => {
         <h2 className="text-2xl font-semibold text-gray-700">
           Manage Orders
         </h2>
+
         <div className="flex items-center gap-3">
           <label className="text-sm font-medium text-gray-600">Sort by:</label>
           <select
@@ -294,6 +298,8 @@ const OrdersPanel = ({ orders = [], onUpdate }) => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

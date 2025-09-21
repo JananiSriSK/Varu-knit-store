@@ -333,6 +333,20 @@ const api = {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({ productIds })
+    }),
+
+  // Payment Settings endpoints
+  getPaymentSettings: () =>
+    fetch(`${API_BASE}/payment-settings`),
+
+  updatePaymentSettings: (settingsData) =>
+    fetch(`${API_BASE}/admin/payment-settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(settingsData)
     })
 };
 

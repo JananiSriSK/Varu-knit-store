@@ -14,6 +14,7 @@ import ai from "./route/aiRoutes.js";
 import debug from "./route/debugRoute.js";
 import favoriteCollection from "./route/favoriteCollectionRoutes.js";
 
+
 const app = express();
 
 // CORS Middleware
@@ -43,6 +44,7 @@ app.use("/api/v1", otp);
 app.use("/api/v1", ai);
 app.use("/api/v1", debug);
 app.use("/api/v1", favoriteCollection);
+
 
 app.use(errorHandleMiddleware);
 

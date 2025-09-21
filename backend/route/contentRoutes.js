@@ -3,6 +3,7 @@ import { getHomepage, updateHomepage, getFooter, updateFooter } from "../control
 import { getFavoriteCollections, setFavoriteCollections } from "../controller/favoriteCollectionController.js";
 import { getLatestCollections, setLatestCollections } from "../controller/latestCollectionController.js";
 import { getChatbotResponses, createChatbotResponse, updateChatbotResponse, deleteChatbotResponse, processChat } from "../controller/chatbotController.js";
+import { getPaymentSettings, updatePaymentSettings } from "../controller/paymentSettingsController.js";
 import { verifyUserAuth, roleBasedAccess } from "../middleware/userAuth.js";
 
 const contentRouter = express.Router();
@@ -29,5 +30,9 @@ contentRouter.route("/admin/chatbot-responses").get(verifyUserAuth, roleBasedAcc
 contentRouter.route("/admin/chatbot-responses").post(verifyUserAuth, roleBasedAccess("admin"), createChatbotResponse);
 contentRouter.route("/admin/chatbot-responses/:id").put(verifyUserAuth, roleBasedAccess("admin"), updateChatbotResponse);
 contentRouter.route("/admin/chatbot-responses/:id").delete(verifyUserAuth, roleBasedAccess("admin"), deleteChatbotResponse);
+
+// Payment Settings routes
+contentRouter.route("/payment-settings").get(getPaymentSettings);
+contentRouter.route("/admin/payment-settings").put(verifyUserAuth, roleBasedAccess("admin"), updatePaymentSettings);
 
 export default contentRouter;
