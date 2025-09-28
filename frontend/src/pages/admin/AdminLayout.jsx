@@ -149,7 +149,7 @@ const AdminLayout = () => {
                 />
                 <div>
                   <h1 className="text-sm sm:text-base font-semibold text-[#444444]">
-                    Varu's Comfy Knits
+                    Varu's Knit Store
                   </h1>
                   <p className="text-xs text-[#666]">Admin Panel</p>
                 </div>

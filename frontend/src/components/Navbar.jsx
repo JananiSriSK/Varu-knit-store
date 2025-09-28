@@ -16,7 +16,7 @@ const Navbar = () => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const profileDropdownRef = useRef(null);
-  
+
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, dispatch, logout } = useAuth();
@@ -25,7 +25,7 @@ const Navbar = () => {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const category = queryParams.get("category") || "";
-    
+
     // Only set active category if we're on products page or have a category parameter
     if (location.pathname === "/products" || category) {
       setActiveCategory(category);
@@ -36,30 +36,38 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target)
+      ) {
         setIsProfileMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   useEffect(() => {
     const fetchWishlistCount = async () => {
-      if (isAuthenticated && user?.role !== 'admin') {
+      if (isAuthenticated && user?.role !== "admin") {
         try {
-          const response = await fetch('http://localhost:5000/api/v1/wishlist', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          });
+          const response = await fetch(
+            "http://localhost:5000/api/v1/wishlist",
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
           const data = await response.json();
           if (data.success) {
             setWishlistCount(data.wishlist.length);
           }
         } catch (err) {
-          console.error('Error fetching wishlist count:', err);
+          console.error("Error fetching wishlist count:", err);
         }
       }
     };
@@ -71,7 +79,7 @@ const Navbar = () => {
 
   const mainNavItems = [
     { name: "Home", icon: Home, href: "/" },
-    { name: "Contact Us", href: "#footer" }
+    { name: "Contact Us", href: "#footer" },
   ];
 
   const categories = [
@@ -95,7 +103,7 @@ const Navbar = () => {
       logout();
       setIsProfileMenuOpen(false);
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
       logout(); // Force logout even if API call fails
     }
   };
@@ -114,7 +122,7 @@ const Navbar = () => {
                 alt="Logo"
                 className="w-15 h-15 rounded-full object-cover border border-[#DBDDFF]"
               />
-              <span className="text-lg font-semibold">Varu's Comfy Knits</span>
+              <span className="text-lg font-semibold">Varu's Knit Store</span>
             </a>
 
             {/* Right Icons */}
@@ -125,19 +133,27 @@ const Navbar = () => {
               </div>
 
               {/* Home button for non-admin users */}
-              {user?.role !== 'admin' && (
-                <a href="/" className="hover:text-[#F4A8A8] transition cursor-pointer">
+              {user?.role !== "admin" && (
+                <a
+                  href="/"
+                  className="hover:text-[#F4A8A8] transition cursor-pointer"
+                >
                   <Home className="h-5 w-5" />
                 </a>
               )}
 
               {/* Notifications for authenticated users */}
-              {isAuthenticated && <NotificationBell isAdmin={user?.role === 'admin'} />}
+              {isAuthenticated && (
+                <NotificationBell isAdmin={user?.role === "admin"} />
+              )}
 
               {/* Wishlist & Cart - Only show for non-admin users */}
-              {user?.role !== 'admin' && (
+              {user?.role !== "admin" && (
                 <>
-                  <a href="/wishlist" className="hover:text-[#F4A8A8] transition relative">
+                  <a
+                    href="/wishlist"
+                    className="hover:text-[#F4A8A8] transition relative"
+                  >
                     <Heart className="cursor-pointer h-5 w-5" />
                     {wishlistCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
@@ -145,7 +161,10 @@ const Navbar = () => {
                       </span>
                     )}
                   </a>
-                  <a href="/cart" className="hover:text-[#F4A8A8] transition relative">
+                  <a
+                    href="/cart"
+                    className="hover:text-[#F4A8A8] transition relative"
+                  >
                     <ShoppingCart className="cursor-pointer h-5 w-5" />
                     {cartItemCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
@@ -157,11 +176,8 @@ const Navbar = () => {
               )}
 
               {/* Profile Dropdown */}
-              <div 
-                className="relative"
-                ref={profileDropdownRef}
-              >
-                <div 
+              <div className="relative" ref={profileDropdownRef}>
+                <div
                   className="cursor-pointer w-8 h-8 rounded-full bg-white hover:bg-[#fceeee] flex items-center justify-center"
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 >
@@ -170,29 +186,32 @@ const Navbar = () => {
 
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-md z-10 py-2 w-44 text-sm">
-                    {user?.role !== 'admin' && mainNavItems.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        onClick={(e) => {
-                          if (item.name === 'Contact Us') {
-                            e.preventDefault();
-                            document.getElementById('footer')?.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }}
-                        className="flex items-center px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
-                      >
-                        {item.icon && <item.icon className="w-4 h-4 mr-2" />}
-                        {item.name}
-                      </a>
-                    ))}
+                    {user?.role !== "admin" &&
+                      mainNavItems.map((item) => (
+                        <a
+                          key={item.name}
+                          href={item.href}
+                          onClick={(e) => {
+                            if (item.name === "Contact Us") {
+                              e.preventDefault();
+                              document
+                                .getElementById("footer")
+                                ?.scrollIntoView({ behavior: "smooth" });
+                            }
+                          }}
+                          className="flex items-center px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
+                        >
+                          {item.icon && <item.icon className="w-4 h-4 mr-2" />}
+                          {item.name}
+                        </a>
+                      ))}
                     <hr className="my-1 border-gray-200" />
                     {isAuthenticated ? (
                       <>
                         <span className="block px-4 py-2 text-gray-600 text-xs">
                           Welcome, {user?.name}
                         </span>
-                        {user?.role !== 'admin' && (
+                        {user?.role !== "admin" && (
                           <a
                             href="/my-profile"
                             className="block px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
@@ -200,7 +219,7 @@ const Navbar = () => {
                             My Profile
                           </a>
                         )}
-                        {user?.role === 'admin' && (
+                        {user?.role === "admin" && (
                           <a
                             href="/admindashboard"
                             className="block px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878]"
@@ -244,24 +263,27 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <div className="lg:hidden py-2 border-t border-gray-200">
               <div className="flex flex-col space-y-2">
-                {user?.role !== 'admin' && mainNavItems.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    onClick={(e) => {
-                      if (item.name === 'Contact Us') {
-                        e.preventDefault();
-                        document.getElementById('footer')?.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                    className="flex items-center text-[#444444] hover:text-[#D97878] py-1 px-2"
-                  >
-                    {item.icon && <item.icon className="w-4 h-4 mr-2" />}
-                    {item.name}
-                  </a>
-                ))}
-                {user?.role !== 'admin' && (
-                  isAuthenticated ? (
+                {user?.role !== "admin" &&
+                  mainNavItems.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      onClick={(e) => {
+                        if (item.name === "Contact Us") {
+                          e.preventDefault();
+                          document
+                            .getElementById("footer")
+                            ?.scrollIntoView({ behavior: "smooth" });
+                        }
+                      }}
+                      className="flex items-center text-[#444444] hover:text-[#D97878] py-1 px-2"
+                    >
+                      {item.icon && <item.icon className="w-4 h-4 mr-2" />}
+                      {item.name}
+                    </a>
+                  ))}
+                {user?.role !== "admin" &&
+                  (isAuthenticated ? (
                     <a
                       href="/my-profile"
                       className="text-[#444444] hover:text-[#D97878] py-1 px-2"
@@ -278,9 +300,8 @@ const Navbar = () => {
                     >
                       Login / Sign Up
                     </button>
-                  )
-                )}
-                {user?.role === 'admin' && (
+                  ))}
+                {user?.role === "admin" && (
                   <a
                     href="/admindashboard"
                     className="text-[#444444] hover:text-[#D97878] py-1 px-2"
@@ -313,7 +334,8 @@ const Navbar = () => {
                     key={category.value}
                     onClick={() => handleCategoryClick(category.value)}
                     className={`text-sm whitespace-nowrap cursor-pointer transition-colors ${
-                      activeCategory === category.value && location.pathname === "/products"
+                      activeCategory === category.value &&
+                      location.pathname === "/products"
                         ? "text-[#A084CA] font-semibold"
                         : "text-[#555] hover:text-[#A084CA]"
                     }`}
@@ -327,11 +349,11 @@ const Navbar = () => {
           <div className="h-[124px]"></div>
         </>
       )}
-      
+
       {/* Login Modal */}
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
       />
     </>
   );
