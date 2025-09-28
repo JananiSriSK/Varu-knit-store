@@ -1,4 +1,4 @@
-import { sendEmail } from './sendEmail.js';
+import sendEmail from './sendEmail.js';
 
 export const testEmailConnection = async () => {
   try {

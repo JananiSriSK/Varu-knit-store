@@ -2,6 +2,8 @@ import handleAsyncError from "../middleware/handleAsyncError.js";
 import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
 import Notification from "../models/notificationModel.js";
+import { createUserNotification } from "./notificationController.js";
+import { sendProductNotification, sendCategoryNotification } from "../utils/notificationService.js";
 import APIFunctionality from "../utils/APIFunctionality.js";
 import HandleError from "../utils/handleError.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
@@ -92,18 +94,17 @@ export const createProducts = handleAsyncError(async (req, res) => {
     const product = await Product.create(req.body);
     console.log('Product created successfully:', product._id);
     
-    // Create notifications for all users about new product
+    // Check for new category first
     const users = await User.find({ role: 'user' });
-    const notifications = users.map(user => ({
-      user: user._id,
-      type: 'new_product',
-      title: 'New Product Added!',
-      message: `Check out our new ${product.category} item: ${product.name}`,
-      data: { productId: product._id }
-    }));
+    const existingCategories = await Product.distinct('category');
+    const isNewCategory = !existingCategories.includes(product.category);
     
-    if (notifications.length > 0) {
-      await Notification.insertMany(notifications);
+    // Send product notifications
+    await sendProductNotification(product);
+    
+    // Send category notifications if it's a new category
+    if (isNewCategory) {
+      await sendCategoryNotification(product.category, users);
     }
     
     res.status(201).json({
@@ -396,6 +397,17 @@ export const createProductReview = handleAsyncError(async (req, res, next) => {
     product.reviews.length > 0 ? sum / product.reviews.length : 0; // no reviews= error, so setting it to 0
 
   await product.save({ validateBeforeSave: false });
+
+  // Create notification for user about review submission
+  if (!reviewExists) {
+    await createUserNotification(
+      req.user._id,
+      'review_submitted',
+      'Review Submitted Successfully',
+      `Thank you for reviewing ${product.name}! Your feedback helps other customers.`,
+      product._id
+    );
+  }
 
   res.status(200).json({
     success: true,

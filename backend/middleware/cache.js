@@ -4,7 +4,12 @@ export const cacheProducts = (duration = 3600) => {
   return async (req, res, next) => {
     if (!isRedisConnected) return next();
     
-    const key = `products:${JSON.stringify(req.query)}`;
+    // Include both query params and route params in cache key
+    const keyData = {
+      query: req.query,
+      params: req.params
+    };
+    const key = `products:${JSON.stringify(keyData)}`;
     
     try {
       const cached = await client.get(key);

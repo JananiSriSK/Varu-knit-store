@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
 import LoginModal from "../components/LoginModal";
+import ConfirmationModal from "../components/ConfirmationModal";
+import OrderSuccessModal from "../components/OrderSuccessModal";
 import api from "../services/api";
 
 const Checkout = () => {
@@ -20,6 +23,11 @@ const Checkout = () => {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [useManualAddress, setUseManualAddress] = useState(false);
+  const [showBackModal, setShowBackModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+
+  
+
   const [shippingInfo, setShippingInfo] = useState({
     name: "",
     address: "",
@@ -149,6 +157,10 @@ const Checkout = () => {
       return;
     }
 
+    setShowOrderModal(true);
+  };
+
+  const confirmOrder = async () => {
     setOrderLoading(true);
 
     try {
@@ -225,8 +237,9 @@ const Checkout = () => {
 
       if (data.success) {
         clearCart();
+        setShowOrderModal(false);
         addNotification(
-          "Order placed successfully! Admin will verify your payment screenshot and confirm the order.",
+          "🎉 Order placed successfully! Admin will verify your payment screenshot and confirm the order.",
           "success"
         );
         navigate("/my-profile?tab=orders");
@@ -250,11 +263,19 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f4ff] py-8">
+    <div className="min-h-screen bg-[#f7f4ff] pt-20 pb-8">
       <div className="max-w-6xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-[#7b5fc4] mb-8 text-center">
-          Checkout
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => setShowBackModal(true)}
+            className="flex items-center gap-2 text-[#7b5fc4] hover:text-[#6b4fb4] transition-colors bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 hover:shadow-md"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-medium">Back to Cart</span>
+          </button>
+          
+          <div className="w-24"></div> {/* Spacer for centering */}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Shipping & Payment Form */}
@@ -487,6 +508,32 @@ const Checkout = () => {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
+
+      {/* Back Navigation Modal */}
+      <ConfirmationModal
+        isOpen={showBackModal}
+        onClose={() => setShowBackModal(false)}
+        onConfirm={() => navigate("/cart")}
+        title="Leave Checkout?"
+        message="Are you sure you want to go back to cart? Your shipping information will be lost."
+        confirmText="Go Back"
+        cancelText="Stay Here"
+        type="default"
+      />
+
+      {/* Order Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showOrderModal}
+        onClose={() => setShowOrderModal(false)}
+        onConfirm={confirmOrder}
+        title="Confirm Order"
+        message={`Are you sure you want to place this order for ₹${total.toFixed(2)}? Please ensure you have made the payment and uploaded the correct screenshot.`}
+        confirmText="Place Order"
+        cancelText="Review Again"
+        type="default"
+      />
+      
+
     </div>
   );
 };

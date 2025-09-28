@@ -3,16 +3,19 @@ import { useParams, Link } from "react-router-dom";
 import { FiStar, FiShoppingCart, FiHeart } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useWishlist } from "../context/WishlistContext";
 import { useNotification } from "../context/NotificationContext";
 import BackButton from "../components/BackButton";
 import ImageZoomModal from "../components/ImageZoomModal";
 import ProductRecommendations from "../components/ProductRecommendations";
+import ConfirmationModal from "../components/ConfirmationModal";
 import api from "../services/api";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { isInWishlist: checkIsInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const { addNotification } = useNotification();
 
   const [product, setProduct] = useState(null);
@@ -20,22 +23,44 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
-  const [review, setReview] = useState({ rating: 5, comment: "" });
+  const [review, setReview] = useState({ rating: 5, comment: "", images: [] });
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [isInWishlist, setIsInWishlist] = useState(false);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
+  const [existingReview, setExistingReview] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
+    console.log('ProductDetail useEffect - ID from params:', id);
+    
+    // Reset state when ID changes
+    setProduct(null);
+    setLoading(true);
+    setSelectedSize("");
+    setQuantity(1);
+    setActiveImage(0);
+    setHasPurchased(false);
+    
     const fetchProduct = async () => {
       try {
+        console.log('Fetching product with ID:', id);
         const response = await api.getProduct(id);
         const data = await response.json();
+        console.log('Product fetched:', data.product?.name, data.product?._id);
 
         if (data.success) {
           setProduct(data.product);
           if (data.product.size?.length > 0) {
             setSelectedSize(data.product.size[0]);
+          }
+          
+          // Check if user has already reviewed this product
+          if (isAuthenticated && data.product.reviews) {
+            const userReview = data.product.reviews.find(review => review.user?.toString() === user?.id?.toString());
+            if (userReview) {
+              setExistingReview(userReview);
+              setReview({ rating: userReview.rating, comment: userReview.comment, images: userReview.images || [] });
+            }
           }
         }
         
@@ -62,8 +87,12 @@ const ProductDetail = () => {
       }
     };
 
-    fetchProduct();
-  }, [id]);
+    if (id) {
+      fetchProduct();
+      // Scroll to top when product changes
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [id, isAuthenticated]);
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -88,18 +117,16 @@ const ProductDetail = () => {
     }
 
     try {
-      if (isInWishlist) {
-        const response = await api.removeFromWishlist(product._id);
-        const data = await response.json();
-        if (data.success) {
-          setIsInWishlist(false);
+      const productInWishlist = checkIsInWishlist(product._id);
+      
+      if (productInWishlist) {
+        const result = await removeFromWishlist(product._id);
+        if (result.success) {
           addNotification("Removed from wishlist", "success");
         }
       } else {
-        const response = await api.addToWishlist(product._id);
-        const data = await response.json();
-        if (data.success) {
-          setIsInWishlist(true);
+        const result = await addToWishlist(product._id);
+        if (result.success) {
           addNotification("Added to wishlist", "success");
         }
       }
@@ -117,25 +144,71 @@ const ProductDetail = () => {
     }
 
     try {
+      // Convert images to base64 if any
+      let imageData = [];
+      if (review.images && review.images.length > 0) {
+        for (const file of review.images) {
+          const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          });
+          imageData.push(base64);
+        }
+      }
+
       const response = await api.createReview({
         productId: product._id,
         rating: review.rating,
         comment: review.comment,
+        images: imageData,
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setProduct(data.product);
-        setReview({ rating: 5, comment: "" });
+        console.log('✅ Review submitted successfully:', data);
+        
+        // Update product with new review data
+        if (data.product) {
+          console.log('🔄 Updating product with new reviews:', data.product.reviews.length);
+          setProduct(data.product);
+          
+          // Find the user's review
+          const userReview = data.product.reviews.find(r => r.user?.toString() === user?.id?.toString());
+          setExistingReview(userReview);
+          console.log('📝 User review found:', userReview);
+        }
+        
+        setReview({ rating: 5, comment: "", images: [] });
         setShowReviewForm(false);
-        addNotification("Review submitted successfully!", "success");
+        addNotification(existingReview ? "Review updated successfully!" : "Review submitted successfully!", "success");
       } else {
         addNotification(data.message || "Failed to submit review", "error");
       }
     } catch (err) {
       console.error("Review error:", err);
       addNotification("Failed to submit review", "error");
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    try {
+      const response = await api.deleteReview(product._id, existingReview._id);
+      const data = await response.json();
+
+      if (data.success) {
+        setProduct(data.product || { ...product, reviews: product.reviews.filter(r => r._id !== existingReview._id) });
+        setExistingReview(null);
+        setReview({ rating: 5, comment: "", images: [] });
+        setShowReviewForm(false);
+        addNotification("Review deleted successfully!", "success");
+      } else {
+        addNotification(data.message || "Failed to delete review", "error");
+      }
+    } catch (err) {
+      console.error("Delete review error:", err);
+      addNotification("Failed to delete review", "error");
     }
   };
 
@@ -248,9 +321,12 @@ const ProductDetail = () => {
                     }`}
                   />
                 ))}
-                <span className="ml-2 text-gray-600">
+                <button 
+                  onClick={() => document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="ml-2 text-gray-600 hover:text-[#7b5fc4] underline cursor-pointer"
+                >
                   ({product.numberOfReviews} reviews)
-                </span>
+                </button>
               </div>
             </div>
 
@@ -330,28 +406,43 @@ const ProductDetail = () => {
               <button
                 onClick={toggleWishlist}
                 className={`px-6 py-3 border-none rounded-lg transition ${
-                  isInWishlist
+                  checkIsInWishlist(product._id)
                     ? "bg-red-50 border-red-300 text-red-600"
                     : "border-[#7b5fc4] text-[#7b5fc4] hover:bg-[#7b5fc4] hover:text-white"
                 }`}
               >
-                <FiHeart className={isInWishlist ? "fill-current" : ""} />
+                <FiHeart className={checkIsInWishlist(product._id) ? "fill-current" : ""} />
               </button>
             </div>
           </div>
         </div>
 
         {/* Reviews Section */}
-        <div className="mt-12 bg-white rounded-lg shadow-md p-6">
+        <div id="reviews-section" className="mt-12 bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-[#444444]">Reviews</h2>
             {isAuthenticated && hasPurchased && (
-              <button
-                onClick={() => setShowReviewForm(!showReviewForm)}
-                className="bg-[#e1cffb] text-[#444444] px-4 py-2 rounded-lg hover:bg-[#b89ae8] transition"
-              >
-                Write Review
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowReviewForm(!showReviewForm);
+                    if (existingReview && !showReviewForm) {
+                      setReview({ rating: existingReview.rating, comment: existingReview.comment, images: existingReview.images || [] });
+                    }
+                  }}
+                  className="bg-[#e1cffb] text-[#444444] px-4 py-2 rounded-lg hover:bg-[#b89ae8] transition"
+                >
+                  {existingReview ? 'Edit Review' : 'Write Review'}
+                </button>
+                {existingReview && (
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 transition"
+                  >
+                    Delete Review
+                  </button>
+                )}
+              </div>
             )}
             {isAuthenticated && !hasPurchased && (
               <p className="text-sm text-gray-500">Only customers who have purchased this product can write reviews</p>
@@ -395,12 +486,28 @@ const ProductDetail = () => {
                   placeholder="Write your review..."
                 />
               </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  Add Images (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    setReview({ ...review, images: files });
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d8b4fe]"
+                />
+                <p className="text-xs text-gray-500 mt-1">You can upload multiple images of the product</p>
+              </div>
               <div className="flex space-x-2">
                 <button
                   type="submit"
                   className="bg-[#e1cffb] text-[#444444] px-4 py-2 rounded-lg hover:bg-[#b89ae8] transition"
                 >
-                  Submit Review
+                  {existingReview ? 'Update Review' : 'Submit Review'}
                 </button>
                 <button
                   type="button"
@@ -434,7 +541,33 @@ const ProductDetail = () => {
                     <span className="ml-2 font-semibold">{review.name}</span>
                     <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Verified Purchase</span>
                   </div>
-                  <p className="text-gray-600">{review.comment}</p>
+                  <p className="text-gray-600 mb-3">{review.comment}</p>
+                  {review.images && review.images.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-500 mb-2">Customer Photos:</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {review.images.map((img, imgIndex) => {
+                          const imageSrc = typeof img === 'string' ? img : (img.url || img.src || img);
+                          return (
+                            <div key={imgIndex} className="relative group">
+                              <img
+                                src={imageSrc}
+                                alt={`Customer photo ${imgIndex + 1}`}
+                                className="w-16 h-16 object-cover rounded-lg border-2 border-gray-200 cursor-pointer hover:border-[#7b5fc4] transition-all duration-200 shadow-sm"
+                                onClick={() => window.open(imageSrc, '_blank')}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all duration-200 flex items-center justify-center">
+                                <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">🔍</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -457,6 +590,18 @@ const ProductDetail = () => {
           onClose={() => setShowZoomModal(false)}
           imageSrc={product.image?.[activeImage]?.url}
           imageAlt={product.name}
+        />
+
+        {/* Delete Review Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteReview}
+          title="Delete Review"
+          message="Are you sure you want to delete your review? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          type="danger"
         />
       </div>
     </div>

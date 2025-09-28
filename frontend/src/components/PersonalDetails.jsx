@@ -74,10 +74,25 @@ const PersonalDetails = ({ user }) => {
         wishlistRes.json()
       ]);
       
+      const orderCount = ordersData.success ? ordersData.orders.length : 0;
+      const wishlistCount = wishlistData.success ? wishlistData.wishlist.length : 0;
+      
+      // Count reviews from delivered orders
+      let reviewCount = 0;
+      if (ordersData.success) {
+        ordersData.orders.forEach(order => {
+          if (order.orderStatus === 'Delivered') {
+            reviewCount += order.orderItems.length; // Each item can have a review
+          }
+        });
+      }
+      
+      console.log('📊 User Stats:', { orderCount, wishlistCount, reviewCount });
+      
       setStats({
-        orders: ordersData.success ? ordersData.orders.length : 0,
-        reviews: 0, // TODO: Implement reviews count
-        wishlist: wishlistData.success ? wishlistData.wishlist.length : 0,
+        orders: orderCount,
+        reviews: reviewCount,
+        wishlist: wishlistCount,
         returns: 0 // TODO: Implement returns count
       });
     } catch (err) {

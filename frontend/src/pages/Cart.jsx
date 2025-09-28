@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FiMinus, FiPlus, FiTrash2 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -12,9 +12,10 @@ const Cart = () => {
   const { user } = useAuth();
   const [products, setProducts] = useState({});
   const [loading, setLoading] = useState(true);
-
+  const [showCelebration, setShowCelebration] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { addNotification } = useNotification();
+  const prevSubtotalRef = useRef(0);
 
   useEffect(() => {
     setLoading(false);
@@ -36,6 +37,15 @@ const Cart = () => {
   
   const shipping = subtotal >= 999 ? 0 : 100;
   const total = subtotal + shipping;
+
+  // Check for free shipping eligibility and trigger celebration
+  useEffect(() => {
+    if (prevSubtotalRef.current < 999 && subtotal >= 999 && items.length > 0) {
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
+    }
+    prevSubtotalRef.current = subtotal;
+  }, [subtotal, items.length]);
 
   if (loading) {
     return (
@@ -152,8 +162,20 @@ const Cart = () => {
                   <span>Shipping</span>
                   <span>{shipping === 0 ? 'Free' : `₹${shipping.toFixed(2)}`}</span>
                 </div>
-                {shipping === 0 && (
-                  <p className="text-green-600 text-sm">Free shipping on orders over ₹999!</p>
+                {shipping === 0 ? (
+                  <div className="relative">
+                    <p className="text-green-600 text-sm font-medium">🎉 Free shipping on orders over ₹999!</p>
+                    {showCelebration && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="animate-bounce text-2xl">🎉</div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm">
+                    <p className="text-orange-700 font-medium">📦 Add ₹{(999 - subtotal).toFixed(2)} more to get FREE shipping!</p>
+                    <p className="text-orange-600 text-xs mt-1">Save ₹100 on shipping costs</p>
+                  </div>
                 )}
                 <hr className="my-3" />
                 <div className="flex justify-between font-semibold text-lg">
@@ -186,6 +208,23 @@ const Cart = () => {
           </div>
         </div>
       </div>
+      
+      {/* Celebration Overlay */}
+      {showCelebration && (
+        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+          <div className="text-6xl animate-pulse">
+            🎉
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 opacity-20 animate-pulse"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="bg-white rounded-lg shadow-lg p-6 text-center animate-bounce">
+              <div className="text-4xl mb-2">🎉</div>
+              <h3 className="text-xl font-bold text-[#7b5fc4] mb-1">Congratulations!</h3>
+              <p className="text-gray-600">You've unlocked FREE shipping!</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Login Modal */}
       <LoginModal 

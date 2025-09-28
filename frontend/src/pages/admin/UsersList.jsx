@@ -2,14 +2,16 @@ import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useNotification } from "../../context/NotificationContext";
 import { useAuth } from "../../context/AuthContext";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import api from "../../services/api";
 
 const UsersList = ({ users = [], onUpdate }) => {
   const [deleting, setDeleting] = useState(null);
   const { addNotification } = useNotification();
   const { user: currentUser } = useAuth();
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, userId: null, userName: "", userRole: "" });
 
-  const handleDelete = async (id, userName, userRole) => {
+  const handleDeleteClick = (id, userName, userRole) => {
     // Prevent deleting admin users or self
     if (id === currentUser?.id) {
       addNotification('You cannot delete your own account', 'error');
@@ -21,27 +23,27 @@ const UsersList = ({ users = [], onUpdate }) => {
       return;
     }
     
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete user "${userName}"? This action cannot be undone.`
-    );
-    if (confirmDelete) {
-      setDeleting(id);
-      try {
-        const response = await api.deleteUser(id);
-        const data = await response.json();
-        
-        if (data.success) {
-          addNotification('User deleted successfully', 'success');
-          onUpdate(); // Refresh the users list
-        } else {
-          addNotification(data.message || 'Failed to delete user', 'error');
-        }
-      } catch (err) {
-        console.error('Error deleting user:', err);
-        addNotification('Failed to delete user', 'error');
-      } finally {
-        setDeleting(null);
+    setDeleteModal({ isOpen: true, userId: id, userName, userRole });
+  };
+
+  const handleDelete = async () => {
+    const { userId } = deleteModal;
+    setDeleting(userId);
+    try {
+      const response = await api.deleteUser(userId);
+      const data = await response.json();
+      
+      if (data.success) {
+        addNotification('User deleted successfully', 'success');
+        onUpdate(); // Refresh the users list
+      } else {
+        addNotification(data.message || 'Failed to delete user', 'error');
       }
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      addNotification('Failed to delete user', 'error');
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -82,7 +84,7 @@ const UsersList = ({ users = [], onUpdate }) => {
                         ? 'text-gray-400 cursor-not-allowed'
                         : 'text-[#D97878] hover:text-[#c76666]'
                     }`}
-                    onClick={() => handleDelete(user._id, user.name, user.role)}
+                    onClick={() => handleDeleteClick(user._id, user.name, user.role)}
                     disabled={deleting === user._id || user.role === 'admin' || user._id === currentUser?.id}
                     title={user.role === 'admin' ? 'Cannot delete admin users' : user._id === currentUser?.id ? 'Cannot delete yourself' : 'Delete user'}
                   >

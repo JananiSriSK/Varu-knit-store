@@ -4,7 +4,7 @@ import HandleError from "../utils/handleError.js";
 import { sendToken } from "../utils/jwtToken.js";
 import sendEmail from "../utils/sendEmail.js";
 import crypto from "crypto";
-import { createAdminNotification } from "./notificationController.js";
+import { createAdminNotification, createUserNotification } from "./notificationController.js";
 
 //Register user
 
@@ -40,6 +40,15 @@ export const registerUser = handleAsyncError(async (req, res, next) => {
     'New User Registered',
     `New user ${user.name} (${user.email}) has registered`,
     user._id
+  );
+
+  // Create welcome notification for user
+  await createUserNotification(
+    user._id,
+    'welcome',
+    'Welcome to Varu\'s Knit Store!',
+    'Thank you for joining us! Explore our collection of handmade crochet and knitted items.',
+    null
   );
 
   sendToken(user, 201, res);

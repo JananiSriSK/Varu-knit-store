@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
 import ProductCard from "../components/ProductCard";
-import ConfirmModal from "../components/ConfirmModal";
+import ConfirmationModal from "../components/ConfirmationModal";
 import api from "../services/api";
 
 const Wishlist = () => {
@@ -104,12 +104,15 @@ const Wishlist = () => {
           ))}
         </div>
         
-        <ConfirmModal
+        <ConfirmationModal
           isOpen={showConfirmModal}
           onClose={() => setShowConfirmModal(false)}
           onConfirm={confirmRemove}
           title="Remove from Wishlist"
           message="Are you sure you want to remove this item from your wishlist?"
+          confirmText="Remove"
+          cancelText="Cancel"
+          type="danger"
         />
       </div>
     </div>

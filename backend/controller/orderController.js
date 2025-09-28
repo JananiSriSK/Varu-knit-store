@@ -4,7 +4,8 @@ import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
 import Order from "../models/orderModel.js";
 import sendEmail from "../utils/sendEmail.js";
-import { createAdminNotification } from "./notificationController.js";
+import { createAdminNotification, createUserNotification } from "./notificationController.js";
+import { sendOrderNotification } from "../utils/notificationService.js";
 
 //create Order
 export const createNewOrder = handleAsyncError(async (req, res, next) => {
@@ -38,35 +39,34 @@ export const createNewOrder = handleAsyncError(async (req, res, next) => {
     order._id
   );
 
-  // Send order confirmation notifications (email + SMS)
+  // Create user notification for order confirmation
+  await createUserNotification(
+    req.user._id,
+    'order_placed',
+    'Order Placed Successfully',
+    `Your order #${order._id.toString().slice(-8)} has been placed successfully for ₹${totalPrice}`,
+    order._id
+  );
+
+  // Send order confirmation notifications using notification service
   try {
-    // Email notification
-    await sendEmail({
-      email: req.user.email,
-      subject: "Order Placed Successfully - Varu's Knit Store",
-      message: `
-        <h2>Order Confirmation</h2>
-        <p>Dear ${req.user.name},</p>
-        <p>Your order has been placed successfully!</p>
-        <p><strong>Order ID:</strong> ${order._id}</p>
-        <p><strong>Total Amount:</strong> ₹${totalPrice}</p>
-        <p>We will verify your payment and process your order soon.</p>
-        <p>Thank you for shopping with us!</p>
-      `
-    });
-    
-    // SMS notification
-    if (req.user.phone) {
-      try {
-        const { sendOrderSMS } = await import('../utils/sendSMS.js');
-        const orderId = order._id.toString().slice(-8);
-        await sendOrderSMS(req.user.phone, 'Processing', orderId);
-      } catch (smsError) {
-        console.log("SMS notification failed:", smsError.message);
-      }
+    console.log(`Sending order confirmation notification for order: ${order._id}`);
+    await sendOrderNotification(req.user._id, order._id, 'Processing', totalPrice);
+    console.log('Order confirmation notification completed');
+  } catch (notificationError) {
+    console.error('Failed to send order confirmation notification:', notificationError);
+  }
+  
+  // SMS notification
+  if (req.user.phone) {
+    try {
+      const { sendOrderSMS } = await import('../utils/sendSMS.js');
+      const orderId = order._id.toString().slice(-8);
+      await sendOrderSMS(req.user.phone, 'Processing', orderId);
+      console.log('Order SMS sent successfully');
+    } catch (smsError) {
+      console.log("SMS notification failed:", smsError.message);
     }
-  } catch (err) {
-    console.log("Notification failed:", err.message);
   }
 
   res.status(201).json({
@@ -155,77 +155,25 @@ export const updateOrderStatus = handleAsyncError(async (req, res, next) => {
 
   await order.save({ validateBeforeSave: false });
 
-  // Send status update notifications (email + SMS)
+  // Send status update notifications using notification service
+  try {
+    console.log(`Sending order status notification for order: ${order._id}, status: ${order.orderStatus}`);
+    await sendOrderNotification(order.user, order._id, order.orderStatus, order.totalPrice);
+    console.log('Order status notification completed');
+  } catch (notificationError) {
+    console.error('Failed to send order status notification:', notificationError);
+  }
+  
+  // Send SMS notification
   try {
     const user = await User.findById(order.user);
-    let emailSubject = "";
-    let emailMessage = "";
-    
-    if (order.orderStatus === "Verified and Confirmed") {
-      emailSubject = "Order Verified and Confirmed - Varu's Knit Store";
-      emailMessage = `
-        <h2>Order Confirmed</h2>
-        <p>Dear ${user.name},</p>
-        <p>Your payment has been verified and order confirmed!</p>
-        <p><strong>Order ID:</strong> ${order._id}</p>
-        <p>We will start processing your order soon.</p>
-      `;
-    } else if (order.orderStatus === "Shipped") {
-      emailSubject = "Order Shipped - Varu's Knit Store";
-      emailMessage = `
-        <h2>Order Shipped</h2>
-        <p>Dear ${user.name},</p>
-        <p>Great news! Your order has been shipped.</p>
-        <p><strong>Order ID:</strong> ${order._id}</p>
-        <p>Your order is on its way to you!</p>
-      `;
-    } else if (order.orderStatus === "Delivered") {
-      const reviewLinks = order.orderItems.map(item => 
-        `<li><a href="http://localhost:5173/product/${item.product}" style="color: #7b5fc4; text-decoration: none;">Review ${item.name}</a></li>`
-      ).join('');
-      
-      emailSubject = "Order Delivered - Varu's Knit Store";
-      emailMessage = `
-        <h2>Order Delivered</h2>
-        <p>Dear ${user.name},</p>
-        <p>Your order has been delivered successfully!</p>
-        <p><strong>Order ID:</strong> ${order._id}</p>
-        <p>We'd love to hear your feedback! Please review your products:</p>
-        <ul>${reviewLinks}</ul>
-        <p>Thank you for shopping with us!</p>
-      `;
-    } else if (order.orderStatus === "Cancelled") {
-      emailSubject = "Order Cancelled - Varu's Knit Store";
-      emailMessage = `
-        <h2>Order Cancelled</h2>
-        <p>Dear ${user.name},</p>
-        <p>Your order has been cancelled.</p>
-        <p><strong>Order ID:</strong> ${order._id}</p>
-        <p>If you have any questions, please contact us.</p>
-      `;
-    }
-    
-    // Send email notification
-    if (emailSubject) {
-      await sendEmail({
-        email: user.email,
-        subject: emailSubject,
-        message: emailMessage
-      });
-    }
-    
-    // Send SMS notification
     if (user.phone && order.orderStatus !== "Processing") {
-      try {
-        const { sendOrderSMS } = await import('../utils/sendSMS.js');
-        const orderId = order._id.toString().slice(-8);
-        await sendOrderSMS(user.phone, order.orderStatus, orderId);
-      } catch (smsError) {
-        console.log("SMS notification failed:", smsError.message);
-      }
+      const { sendOrderSMS } = await import('../utils/sendSMS.js');
+      const orderId = order._id.toString().slice(-8);
+      await sendOrderSMS(user.phone, order.orderStatus, orderId);
     }
-  } catch (err) {
-    console.log("Notification failed:", err.message);
+  } catch (smsError) {
+    console.log("SMS notification failed:", smsError.message);
   }
 
   res.status(200).json({

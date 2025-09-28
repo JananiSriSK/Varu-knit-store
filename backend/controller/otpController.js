@@ -1,7 +1,7 @@
 import handleAsyncError from "../middleware/handleAsyncError.js";
 import OTP from "../models/otpModel.js";
 import User from "../models/userModel.js";
-import { sendEmail } from "../utils/sendEmail.js";
+import sendEmail from "../utils/sendEmail.js";
 import HandleError from "../utils/handleError.js";
 import { sendToken } from "../utils/jwtToken.js";
 
@@ -9,6 +9,7 @@ import { sendToken } from "../utils/jwtToken.js";
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
+
 
 // Send OTP
 export const sendOTP = handleAsyncError(async (req, res, next) => {

@@ -11,6 +11,8 @@ import {
   Settings,
   MessageCircle,
   Heart,
+  User,
+  Star,
 } from "lucide-react";
 import NotificationBell from "../../components/NotificationBell";
 import logo from "../../images/logo.png";
@@ -21,6 +23,7 @@ import Products from "./EditProducts.jsx";
 import ChatbotManagement from "./ChatbotManagement.jsx";
 import FavoriteCollections from "./FavoriteCollections.jsx";
 import ContentManagement from "./ContentManagement.jsx";
+import ReviewsManagement from "./ReviewsManagement.jsx";
 import api from "../../services/api";
 import { useNotification } from "../../context/NotificationContext";
 
@@ -104,6 +107,8 @@ const AdminLayout = () => {
         return <ChatbotManagement />;
       case "favorites":
         return <FavoriteCollections products={products} />;
+      case "reviews":
+        return <ReviewsManagement products={products} />;
       default:
         return <Stats orders={orders} users={users} products={products} />;
     }
@@ -114,6 +119,7 @@ const AdminLayout = () => {
     { id: "users", label: "Users", icon: UsersIcon },
     { id: "orders", label: "Orders", icon: Package },
     { id: "products", label: "Products", icon: Edit },
+    { id: "reviews", label: "Reviews", icon: Star },
     { id: "content", label: "Content", icon: Settings },
     { id: "favorites", label: "Favorites", icon: Heart },
     { id: "chatbot", label: "Chatbot", icon: MessageCircle },
@@ -150,13 +156,28 @@ const AdminLayout = () => {
               </div>
               <div className="flex items-center gap-2">
                 <NotificationBell isAdmin={true} />
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1 text-[#444444] px-2 py-1 rounded-lg hover:bg-white transition-all cursor-pointer"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="text-xs">Logout</span>
-                </button>
+                <div className="w-8 h-8 rounded-full bg-white hover:bg-[#fceeee] flex items-center justify-center cursor-pointer relative group">
+                  <User className="h-3 w-3 text-[#444444]" />
+                  <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-md z-10 py-2 w-32 text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                    <span className="block px-3 py-2 text-gray-600 text-xs">
+                      {user?.name}
+                    </span>
+                    <hr className="my-1 border-gray-200" />
+                    <a
+                      href="/"
+                      className="flex items-center gap-1 px-3 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878] cursor-pointer"
+                    >
+                      <Home className="h-3 w-3" />
+                      <span>Storefront</span>
+                    </a>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-3 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878] cursor-pointer"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             {/* Mobile Navigation Grid */}
@@ -219,13 +240,28 @@ const AdminLayout = () => {
             </div>
             <div className="flex items-center gap-3">
               <NotificationBell isAdmin={true} />
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-[#444444] px-4 py-2 rounded-lg hover:bg-white transition-all cursor-pointer"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="text-sm font-medium">Logout</span>
-              </button>
+              <div className="w-8 h-8 rounded-full bg-white hover:bg-[#fceeee] flex items-center justify-center cursor-pointer relative group">
+                <User className="h-4 w-4 text-[#444444]" />
+                <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-md z-10 py-2 w-36 text-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                  <span className="block px-4 py-2 text-gray-600 text-xs">
+                    {user?.name}
+                  </span>
+                  <hr className="my-1 border-gray-200" />
+                  <a
+                    href="/"
+                    className="flex items-center gap-2 px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878] cursor-pointer"
+                  >
+                    <Home className="h-3 w-3" />
+                    <span>Storefront</span>
+                  </a>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 hover:bg-[#FCE8E8] hover:text-[#D97878] cursor-pointer"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

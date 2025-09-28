@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useWishlist } from "../context/WishlistContext";
 import { useNotification } from "../context/NotificationContext";
+import AddToCartModal from "./AddToCartModal";
 
 const ProductCard = ({ product, isWishlistView = false, onRemoveFromWishlist }) => {
   const { addToCart } = useCart();
@@ -16,6 +17,7 @@ const ProductCard = ({ product, isWishlistView = false, onRemoveFromWishlist }) 
   const [touchEnd, setTouchEnd] = useState(null);
   const [showSizeModal, setShowSizeModal] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
 
   const images = product.image || [];
   const minSwipeDistance = 50;
@@ -68,13 +70,13 @@ const ProductCard = ({ product, isWishlistView = false, onRemoveFromWishlist }) 
       quantity: 1,
       size: selectedSize
     });
-    addNotification('Product added to cart!', 'success');
     setShowSizeModal(false);
     setSelectedSize('');
+    setShowAddToCartModal(true);
   };
 
   return (
-    <Link to={`/product/${product._id}`} className="block">
+    <Link to={`/product/${product._id}`} className="block" onClick={() => console.log('Navigating to product:', product._id, product.name)}>
       <div className="group my-6 flex w-full h-[450px] max-w-[500px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
         <div 
           className="relative mx-2 mt-2 flex h-64 overflow-hidden rounded-lg"
@@ -253,6 +255,13 @@ const ProductCard = ({ product, isWishlistView = false, onRemoveFromWishlist }) 
           </div>
         </div>
       )}
+      
+      {/* Add to Cart Success Modal */}
+      <AddToCartModal
+        isOpen={showAddToCartModal}
+        onClose={() => setShowAddToCartModal(false)}
+        productName={product.name}
+      />
     </Link>
   );
 };

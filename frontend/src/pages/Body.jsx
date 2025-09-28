@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import ProductCard from "../components/ProductCard.jsx";
 import LoginModal from "../components/LoginModal.jsx";
 import PersonalizedRecommendations from "../components/PersonalizedRecommendations.jsx";
@@ -31,6 +32,7 @@ const Body = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchHomepageData();

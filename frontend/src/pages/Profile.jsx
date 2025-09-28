@@ -33,7 +33,10 @@ const Profile = () => {
       const data = await response.json();
       
       if (data.success) {
+        console.log('📦 Orders fetched:', data.orders.length, data.orders);
         setOrders(data.orders);
+      } else {
+        console.error('❌ Failed to fetch orders:', data);
       }
     } catch (err) {
       console.error('Error fetching orders:', err);

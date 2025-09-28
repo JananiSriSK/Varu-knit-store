@@ -21,6 +21,21 @@ export const createAdminNotification = async (type, title, message, relatedId = 
   }
 };
 
+// Create notification for specific user
+export const createUserNotification = async (userId, type, title, message, relatedId = null) => {
+  try {
+    await Notification.create({
+      user: userId,
+      type,
+      title,
+      message,
+      relatedId
+    });
+  } catch (error) {
+    console.error('Error creating user notification:', error);
+  }
+};
+
 // Get notifications for user
 export const getNotifications = handleAsyncError(async (req, res) => {
   const notifications = await Notification.find({ user: req.user._id })

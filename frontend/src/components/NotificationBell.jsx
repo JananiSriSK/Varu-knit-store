@@ -71,6 +71,7 @@ const NotificationBell = ({ isAdmin = false }) => {
         }
         break;
       case 'new_order':
+      case 'order_placed':
         if (isAdmin) {
           navigate('/admindashboard?tab=orders');
         } else {
@@ -78,6 +79,7 @@ const NotificationBell = ({ isAdmin = false }) => {
         }
         break;
       case 'order_status_update':
+      case 'order_update':
         if (isAdmin) {
           navigate('/admindashboard?tab=orders');
         } else {
@@ -91,6 +93,27 @@ const NotificationBell = ({ isAdmin = false }) => {
           navigate('/my-profile?tab=orders');
         }
         break;
+      case 'new_product':
+        if (notification.relatedId) {
+          navigate(`/product/${notification.relatedId}`);
+        } else {
+          navigate('/products');
+        }
+        break;
+      case 'new_category':
+        if (notification.relatedId) {
+          navigate(`/products?category=${encodeURIComponent(notification.relatedId)}`);
+        } else {
+          navigate('/products');
+        }
+        break;
+      case 'review_submitted':
+        if (notification.relatedId) {
+          navigate(`/product/${notification.relatedId}`);
+        } else {
+          navigate('/my-profile?tab=orders');
+        }
+        break;
       case 'low_stock':
         if (isAdmin) {
           navigate('/admindashboard?tab=products');
@@ -100,9 +123,9 @@ const NotificationBell = ({ isAdmin = false }) => {
         if (isAdmin) {
           navigate('/admindashboard?tab=products');
         } else {
-          // Navigate to the specific product if productId is available
-          if (notification.productId) {
-            navigate(`/product/${notification.productId}`);
+          // Navigate to the specific product if relatedId is available
+          if (notification.relatedId) {
+            navigate(`/product/${notification.relatedId}`);
           } else {
             navigate('/my-profile?tab=orders');
           }
@@ -122,8 +145,14 @@ const NotificationBell = ({ isAdmin = false }) => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'new_user': return <User className="h-4 w-4 text-blue-500" />;
-      case 'new_order': return <Package className="h-4 w-4 text-green-500" />;
+      case 'new_order': 
+      case 'order_placed': return <Package className="h-4 w-4 text-green-500" />;
+      case 'order_status_update':
+      case 'order_update': return <Package className="h-4 w-4 text-blue-500" />;
       case 'order_delayed': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'new_product': return <Package className="h-4 w-4 text-purple-500" />;
+      case 'new_category': return <Package className="h-4 w-4 text-indigo-500" />;
+      case 'review_submitted': return <Bell className="h-4 w-4 text-green-500" />;
       default: return <Bell className="h-4 w-4 text-gray-500" />;
     }
   };
@@ -147,8 +176,24 @@ const NotificationBell = ({ isAdmin = false }) => {
 
       {showDropdown && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-          <div className="p-4 border-b border-gray-100">
+          <div className="p-4 border-b border-gray-100 flex justify-between items-center">
             <h3 className="font-semibold text-[#444444]">Notifications</h3>
+            {notifications.length > 0 && (
+              <button
+                onClick={async () => {
+                  try {
+                    await api.markAllNotificationsRead();
+                    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                    setUnreadCount(0);
+                  } catch (err) {
+                    console.error('Error clearing notifications:', err);
+                  }
+                }}
+                className="text-xs text-[#7b5fc4] hover:text-[#6b4fb4] cursor-pointer"
+              >
+                Clear All
+              </button>
+            )}
           </div>
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (

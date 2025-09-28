@@ -86,6 +86,12 @@ const api = {
       body: JSON.stringify(reviewData)
     }),
 
+  deleteReview: (productId, reviewId) =>
+    fetch(`${API_BASE}/admin/reviews?productId=${productId}&id=${reviewId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+
   // Order endpoints
   createOrder: (orderData) =>
     fetch(`${API_BASE}/order/new`, {
