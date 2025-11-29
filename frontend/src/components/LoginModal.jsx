@@ -3,6 +3,7 @@ import { X, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
 import api from "../services/api";
+import axios from "axios";
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -101,14 +102,15 @@ const LoginModal = ({ isOpen, onClose }) => {
             if (guestWishlist.length > 0) {
               for (const productId of guestWishlist) {
                 try {
-                  await fetch('http://localhost:5000/api/v1/wishlist', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${data.token}`
-                    },
-                    body: JSON.stringify({ productId })
-                  });
+                  await axios.post('http://localhost:5000/api/v1/wishlist', 
+                    { productId },
+                    {
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${data.token}`
+                      }
+                    }
+                  );
                 } catch (err) {
                   console.error('Error syncing wishlist item:', err);
                 }

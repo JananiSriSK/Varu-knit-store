@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, ArrowLeft } from 'lucide-react';
+import axios from 'axios';
 
 const OTPVerification = ({ otpId, email, phone, onVerify, onBack }) => {
   const [emailOtp, setEmailOtp] = useState('');
@@ -35,17 +36,13 @@ const OTPVerification = ({ otpId, email, phone, onVerify, onBack }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/v1/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          otpId,
-          emailOtp,
-          phoneOtp: phone ? phoneOtp : undefined
-        })
+      const response = await axios.post('http://localhost:5000/api/v1/verify-otp', {
+        otpId,
+        emailOtp,
+        phoneOtp: phone ? phoneOtp : undefined
       });
 
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         onVerify(data);
       } else {

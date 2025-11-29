@@ -8,6 +8,7 @@ import { useCart } from "../context/CartContext";
 import LoginModal from "./LoginModal";
 import NotificationBell from "./NotificationBell";
 import api from "../services/api";
+import axios from "axios";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -54,7 +55,7 @@ const Navbar = () => {
     const fetchWishlistCount = async () => {
       if (isAuthenticated && user?.role !== "admin") {
         try {
-          const response = await fetch(
+          const response = await axios.get(
             "http://localhost:5000/api/v1/wishlist",
             {
               headers: {
@@ -62,7 +63,7 @@ const Navbar = () => {
               },
             }
           );
-          const data = await response.json();
+          const data = response.data;
           if (data.success) {
             setWishlistCount(data.wishlist.length);
           }

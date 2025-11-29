@@ -5,6 +5,7 @@ import {
   FaEnvelope,
   FaFacebook,
 } from "react-icons/fa";
+import axios from "axios";
 
 const Footer = () => {
   const [footerData, setFooterData] = useState({
@@ -24,8 +25,8 @@ const Footer = () => {
 
   const fetchFooterData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/v1/footer');
-      const data = await response.json();
+      const response = await axios.get('http://localhost:5000/api/v1/footer');
+      const data = response.data;
       if (data.success) {
         setFooterData(data.footer);
       }

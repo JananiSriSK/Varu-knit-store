@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -39,11 +40,11 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       // Verify token with backend
-      fetch('http://localhost:5000/api/v1/me', {
+      axios.get('http://localhost:5000/api/v1/me', {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => res.json())
-      .then(data => {
+      .then(response => {
+        const data = response.data;
         if (data.success) {
           dispatch({ type: 'LOGIN_SUCCESS', payload: data.user });
         } else {

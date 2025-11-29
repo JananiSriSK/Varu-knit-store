@@ -1,359 +1,340 @@
+import axios from 'axios';
+
 const API_BASE = 'http://localhost:5000/api/v1';
+
+// Helper function to get auth headers
+const getAuthHeaders = () => ({
+  Authorization: `Bearer ${localStorage.getItem('token')}`
+});
+
+// Helper function to create axios config
+const createConfig = (method = 'GET', data = null, headers = {}) => {
+  const config = {
+    method,
+    headers: {
+      ...headers
+    }
+  };
+  
+  // For FormData, axios will set Content-Type automatically, so we don't set it
+  // For JSON data, axios sets Content-Type automatically, but we can be explicit
+  if (data instanceof FormData) {
+    config.data = data;
+  } else if (data !== null) {
+    config.data = data;
+    if (method !== 'GET') {
+      config.headers['Content-Type'] = 'application/json';
+    }
+  }
+  
+  return config;
+};
+
+// Helper to wrap axios response to be compatible with fetch API
+const wrapResponse = (axiosPromise) => {
+  return axiosPromise
+    .then(response => ({
+      json: () => Promise.resolve(response.data),
+      ok: response.status >= 200 && response.status < 300,
+      status: response.status,
+      headers: response.headers
+    }))
+    .catch(error => {
+      // Handle axios errors - convert to fetch-like response
+      if (error.response) {
+        // Server responded with error status
+        return Promise.resolve({
+          json: () => Promise.resolve(error.response.data),
+          ok: false,
+          status: error.response.status,
+          headers: error.response.headers
+        });
+      }
+      // Network error or other
+      throw error;
+    });
+};
 
 const api = {
   // Auth endpoints
   register: (userData) => 
-    fetch(`${API_BASE}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    }),
+    wrapResponse(axios(`${API_BASE}/register`, createConfig('POST', userData))),
 
   login: (credentials) =>
-    fetch(`${API_BASE}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials)
-    }),
+    wrapResponse(axios(`${API_BASE}/login`, createConfig('POST', credentials))),
 
   logout: () =>
-    fetch(`${API_BASE}/logout`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/logout`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   getProfile: () =>
-    fetch(`${API_BASE}/me`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/me`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   updateProfile: (userData) =>
-    fetch(`${API_BASE}/me/update`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(userData)
-    }),
+    wrapResponse(axios(`${API_BASE}/me/update`, {
+      ...createConfig('PUT', userData),
+      headers: getAuthHeaders()
+    })),
 
   updatePassword: (passwordData) =>
-    fetch(`${API_BASE}/password/update`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(passwordData)
-    }),
+    wrapResponse(axios(`${API_BASE}/password/update`, {
+      ...createConfig('PUT', passwordData),
+      headers: getAuthHeaders()
+    })),
 
   forgotPassword: (emailData) =>
-    fetch(`${API_BASE}/password/forgot`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(emailData)
-    }),
+    wrapResponse(axios(`${API_BASE}/password/forgot`, createConfig('POST', emailData))),
 
   resetPassword: (token, passwords) =>
-    fetch(`${API_BASE}/password/reset/${token}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(passwords)
-    }),
+    wrapResponse(axios(`${API_BASE}/password/reset/${token}`, createConfig('PUT', passwords))),
 
   // Product endpoints
   getProducts: (params = '') =>
-    fetch(`${API_BASE}/products${params}`),
+    wrapResponse(axios(`${API_BASE}/products${params}`, createConfig('GET'))),
 
   getAdminProducts: () =>
-    fetch(`${API_BASE}/admin/products`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/products`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   getProduct: (id) =>
-    fetch(`${API_BASE}/product/${id}`),
+    wrapResponse(axios(`${API_BASE}/product/${id}`, createConfig('GET'))),
 
   getSubcategories: (category) =>
-    fetch(`${API_BASE}/subcategories?category=${category}`),
+    wrapResponse(axios(`${API_BASE}/subcategories?category=${category}`, createConfig('GET'))),
 
   createReview: (reviewData) =>
-    fetch(`${API_BASE}/review`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(reviewData)
-    }),
+    wrapResponse(axios(`${API_BASE}/review`, {
+      ...createConfig('PUT', reviewData),
+      headers: getAuthHeaders()
+    })),
 
   deleteReview: (productId, reviewId) =>
-    fetch(`${API_BASE}/admin/reviews?productId=${productId}&id=${reviewId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/reviews?productId=${productId}&id=${reviewId}`, {
+      ...createConfig('DELETE'),
+      headers: getAuthHeaders()
+    })),
 
   // Order endpoints
   createOrder: (orderData) =>
-    fetch(`${API_BASE}/order/new`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(orderData)
-    }),
+    wrapResponse(axios(`${API_BASE}/order/new`, {
+      ...createConfig('POST', orderData),
+      headers: getAuthHeaders()
+    })),
 
   getMyOrders: () =>
-    fetch(`${API_BASE}/orders/me`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/orders/me`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   getOrder: (id) =>
-    fetch(`${API_BASE}/order/${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/order/${id}`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   // Admin endpoints
   getAllUsers: () =>
-    fetch(`${API_BASE}/admin/users`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/users`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   deleteUser: (id) =>
-    fetch(`${API_BASE}/admin/user/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/user/${id}`, {
+      ...createConfig('DELETE'),
+      headers: getAuthHeaders()
+    })),
 
   getAllOrders: () =>
-    fetch(`${API_BASE}/admin/orders`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/orders`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   updateOrderStatus: (id, status) =>
-    fetch(`${API_BASE}/admin/order/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ status })
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/order/${id}`, {
+      ...createConfig('PUT', { status }),
+      headers: getAuthHeaders()
+    })),
 
   createProduct: (formData) =>
-    fetch(`${API_BASE}/admin/product/new`, {
+    wrapResponse(axios(`${API_BASE}/admin/product/new`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: formData
-    }),
+      headers: getAuthHeaders(),
+      data: formData
+    })),
 
   updateProduct: (id, formData) =>
-    fetch(`${API_BASE}/admin/product/${id}`, {
+    wrapResponse(axios(`${API_BASE}/admin/product/${id}`, {
       method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: formData
-    }),
+      headers: getAuthHeaders(),
+      data: formData
+    })),
 
   deleteProduct: (id) =>
-    fetch(`${API_BASE}/admin/product/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/product/${id}`, {
+      ...createConfig('DELETE'),
+      headers: getAuthHeaders()
+    })),
 
   // Wishlist endpoints
   getWishlist: () =>
-    fetch(`${API_BASE}/wishlist`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/wishlist`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   addToWishlist: (productId) =>
-    fetch(`${API_BASE}/wishlist`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ productId })
-    }),
+    wrapResponse(axios(`${API_BASE}/wishlist`, {
+      ...createConfig('POST', { productId }),
+      headers: getAuthHeaders()
+    })),
 
   removeFromWishlist: (productId) =>
-    fetch(`${API_BASE}/wishlist/${productId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/wishlist/${productId}`, {
+      ...createConfig('DELETE'),
+      headers: getAuthHeaders()
+    })),
 
   // Content management endpoints
   getHomepage: () =>
-    fetch(`${API_BASE}/homepage`),
+    wrapResponse(axios(`${API_BASE}/homepage`, createConfig('GET'))),
 
   updateHomepage: (formData) =>
-    fetch(`${API_BASE}/admin/homepage`, {
+    wrapResponse(axios(`${API_BASE}/admin/homepage`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      body: formData
-    }),
+      headers: getAuthHeaders(),
+      data: formData
+    })),
 
   getFooter: () =>
-    fetch(`${API_BASE}/footer`),
+    wrapResponse(axios(`${API_BASE}/footer`, createConfig('GET'))),
 
   updateFooter: (footerData) =>
-    fetch(`${API_BASE}/admin/footer`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(footerData)
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/footer`, {
+      ...createConfig('PUT', footerData),
+      headers: getAuthHeaders()
+    })),
 
   // Notification endpoints
   getNotifications: () =>
-    fetch(`${API_BASE}/notifications`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/notifications`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   markNotificationRead: (id) =>
-    fetch(`${API_BASE}/notification/${id}/read`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/notification/${id}/read`, {
+      ...createConfig('PUT'),
+      headers: getAuthHeaders()
+    })),
 
   markAllNotificationsRead: () =>
-    fetch(`${API_BASE}/notifications/read-all`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/notifications/read-all`, {
+      ...createConfig('PUT'),
+      headers: getAuthHeaders()
+    })),
 
   // OTP endpoints
   sendOTP: (userData) =>
-    fetch(`${API_BASE}/send-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    }),
+    wrapResponse(axios(`${API_BASE}/send-otp`, createConfig('POST', userData))),
 
   verifyOTP: (otpData) =>
-    fetch(`${API_BASE}/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(otpData)
-    }),
+    wrapResponse(axios(`${API_BASE}/verify-otp`, createConfig('POST', otpData))),
 
   resetPasswordWithOTP: (otpData) =>
-    fetch(`${API_BASE}/reset-password-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(otpData)
-    }),
+    wrapResponse(axios(`${API_BASE}/reset-password-otp`, createConfig('POST', otpData))),
 
   // Address endpoints
   getAddresses: () =>
-    fetch(`${API_BASE}/addresses`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/addresses`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   addAddress: (addressData) =>
-    fetch(`${API_BASE}/addresses`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(addressData)
-    }),
+    wrapResponse(axios(`${API_BASE}/addresses`, {
+      ...createConfig('POST', addressData),
+      headers: getAuthHeaders()
+    })),
 
   updateAddress: (addressId, addressData) =>
-    fetch(`${API_BASE}/addresses/${addressId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(addressData)
-    }),
+    wrapResponse(axios(`${API_BASE}/addresses/${addressId}`, {
+      ...createConfig('PUT', addressData),
+      headers: getAuthHeaders()
+    })),
 
   deleteAddress: (addressId) =>
-    fetch(`${API_BASE}/addresses/${addressId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/addresses/${addressId}`, {
+      ...createConfig('DELETE'),
+      headers: getAuthHeaders()
+    })),
 
   setDefaultAddress: (addressId) =>
-    fetch(`${API_BASE}/addresses/${addressId}/default`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/addresses/${addressId}/default`, {
+      ...createConfig('PUT'),
+      headers: getAuthHeaders()
+    })),
 
   // AI/ML endpoints
   getRecommendations: (productId) =>
-    fetch(`${API_BASE}/recommendations/${productId}`),
+    wrapResponse(axios(`${API_BASE}/recommendations/${productId}`, createConfig('GET'))),
 
   getPersonalizedRecommendations: () =>
-    fetch(`${API_BASE}/recommendations/personalized`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    wrapResponse(axios(`${API_BASE}/recommendations/personalized`, {
+      ...createConfig('GET'),
+      headers: getAuthHeaders()
+    })),
 
   smartSearch: (query, category = '') =>
-    fetch(`${API_BASE}/search?query=${encodeURIComponent(query)}&category=${category}`),
+    wrapResponse(axios(`${API_BASE}/search?query=${encodeURIComponent(query)}&category=${category}`, createConfig('GET'))),
 
   getSearchSuggestions: (query) =>
-    fetch(`${API_BASE}/search/suggestions?query=${encodeURIComponent(query)}`),
+    wrapResponse(axios(`${API_BASE}/search/suggestions?query=${encodeURIComponent(query)}`, createConfig('GET'))),
 
   chatbot: (message, userId = null) =>
-    fetch(`http://localhost:5001/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, userId })
-    }),
+    wrapResponse(axios(`http://localhost:5001/chat`, createConfig('POST', { message, userId }))),
 
   getFAQ: () =>
-    fetch(`${API_BASE}/faq`),
+    wrapResponse(axios(`${API_BASE}/faq`, createConfig('GET'))),
 
   // Favorite Collections endpoints
   getFavoriteCollections: () =>
-    fetch(`${API_BASE}/favorite-collections`),
+    wrapResponse(axios(`${API_BASE}/favorite-collections`, createConfig('GET'))),
 
   setFavoriteCollections: (productIds) =>
-    fetch(`${API_BASE}/admin/favorite-collections`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ productIds })
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/favorite-collections`, {
+      ...createConfig('PUT', { productIds }),
+      headers: getAuthHeaders()
+    })),
 
   // Latest Collections endpoints
   getLatestCollections: () =>
-    fetch(`${API_BASE}/latest-collections`),
+    wrapResponse(axios(`${API_BASE}/latest-collections`, createConfig('GET'))),
 
   setLatestCollections: (productIds) =>
-    fetch(`${API_BASE}/admin/latest-collections`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ productIds })
-    }),
+    wrapResponse(axios(`${API_BASE}/admin/latest-collections`, {
+      ...createConfig('PUT', { productIds }),
+      headers: getAuthHeaders()
+    })),
 
   // Payment Settings endpoints
   getPaymentSettings: () =>
-    fetch(`${API_BASE}/payment-settings`),
+    wrapResponse(axios(`${API_BASE}/payment-settings`, createConfig('GET'))),
 
   updatePaymentSettings: (settingsData) =>
-    fetch(`${API_BASE}/admin/payment-settings`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(settingsData)
-    })
+    wrapResponse(axios(`${API_BASE}/admin/payment-settings`, {
+      ...createConfig('PUT', settingsData),
+      headers: getAuthHeaders()
+    }))
 };
 
 export default api;

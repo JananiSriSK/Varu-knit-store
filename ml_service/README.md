@@ -1,177 +1,77 @@
-# 🤖 ML Service - Advanced AI/ML for Varu's Knit Store
+# AI/ML Service for Varu's Knit Store
 
-This Flask-based ML service provides advanced AI/ML capabilities for the ecommerce platform.
+## Overview
+Advanced machine learning service providing intelligent recommendations, smart search, and AI-powered chatbot functionality.
 
-## 🚀 Features
+## Features
 
-### 1. **Advanced Product Recommendations**
-- **Collaborative Filtering**: Uses SVD (Singular Value Decomposition) for matrix factorization
-- **Content-Based Filtering**: TF-IDF vectorization for product similarity
-- **Market Basket Analysis**: Association rules for frequently bought together items
-- **Fallback Systems**: Ensures recommendations even with minimal data
+### 🤖 AI-Powered Recommendations
+- **Content-Based Filtering**: Uses TF-IDF vectorization and cosine similarity
+- **Collaborative Filtering**: Analyzes user behavior patterns
+- **Personalized Suggestions**: ML-driven user preference analysis
 
-### 2. **Smart Search Engine**
-- **Semantic Search**: TF-IDF + Cosine similarity for meaning-based search
-- **Fuzzy Matching**: Levenshtein distance for typo tolerance
-- **Multi-field Search**: Searches across name, description, category
-- **Real-time Suggestions**: NLP-powered autocomplete
+### 🔍 Smart Search
+- **Semantic Search**: NLP-powered query understanding
+- **Intent Classification**: BART model for query intent detection
+- **Fuzzy Matching**: Handles typos and partial matches
+- **Contextual Suggestions**: AI-generated search suggestions
 
-### 3. **Intelligent Chatbot**
-- **Intent Recognition**: Keyword-based intent classification
-- **Contextual Responses**: Dynamic response generation
+### 💬 Intelligent Chatbot
+- **Sentiment Analysis**: DistilBERT for emotion detection
+- **Intent Recognition**: Zero-shot classification
+- **Contextual Responses**: Personalized based on user history
 - **Multi-turn Conversations**: Maintains conversation context
-- **Extensible**: Easy to add new intents and responses
 
-## 📦 Installation
+### 📊 User Behavior Analytics
+- **Clustering Analysis**: K-means for user segmentation
+- **Engagement Scoring**: ML-based user engagement metrics
+- **Behavioral Patterns**: Advanced pattern recognition
 
-### Prerequisites
-- Python 3.8+
-- pip package manager
+## ML Models Used
 
-### Quick Start
+1. **TF-IDF Vectorizer**: Text feature extraction
+2. **Cosine Similarity**: Product similarity calculation
+3. **DistilBERT**: Sentiment analysis
+4. **BART**: Zero-shot text classification
+5. **K-Means**: User clustering and segmentation
+
+## Installation
+
 ```bash
-# Navigate to ml_service directory
-cd ml_service
-
-# Install dependencies and run
-python run.py --install
-
-# Or manually:
 pip install -r requirements.txt
 python app.py
 ```
 
-## 🔧 API Endpoints
+## API Endpoints
 
 ### Recommendations
-```http
-GET /recommendations/frequently-bought-together/<product_id>
-GET /recommendations/personalized/<user_id>
-```
+- `GET /recommendations/frequently-bought-together/<product_id>` - AI product recommendations
+- `GET /recommendations/personalized/<user_id>` - Personalized user recommendations
 
 ### Search
-```http
-POST /search/smart
-Content-Type: application/json
-{
-  "query": "blue sweater",
-  "category": "women"
-}
-
-POST /search/suggestions
-Content-Type: application/json
-{
-  "query": "swe"
-}
-```
+- `POST /search/smart` - AI-powered semantic search
+- `POST /search/suggestions` - Intelligent search suggestions
 
 ### Chatbot
-```http
-POST /chat
-Content-Type: application/json
-{
-  "message": "What's my order status?",
-  "userId": "user123"
-}
-```
+- `POST /chat` - AI chatbot with sentiment analysis
 
-## 🧠 ML Algorithms Used
+### Analytics
+- `POST /analytics/user-behavior` - User behavior analysis
 
-### 1. **Collaborative Filtering**
-- **Algorithm**: Truncated SVD (Singular Value Decomposition)
-- **Library**: scikit-learn
-- **Purpose**: Find users with similar purchase patterns
-- **Advantage**: Discovers hidden patterns in user behavior
+### Health
+- `GET /health` - Service status and model information
 
-### 2. **Content-Based Filtering**
-- **Algorithm**: TF-IDF + Cosine Similarity
-- **Library**: scikit-learn
-- **Purpose**: Find products similar to user's preferences
-- **Advantage**: Works well for new products
+## Performance Features
 
-### 3. **Semantic Search**
-- **Algorithm**: TF-IDF Vectorization + Cosine Similarity
-- **Library**: scikit-learn
-- **Purpose**: Understand search intent beyond keywords
-- **Advantage**: Handles synonyms and related terms
+- **Caching**: 30-minute product cache for performance
+- **Batch Processing**: Efficient bulk operations
+- **Model Optimization**: Lightweight models for fast inference
+- **Fallback Logic**: Rule-based fallbacks for ML failures
 
-### 4. **Fuzzy String Matching**
-- **Algorithm**: Levenshtein Distance
-- **Implementation**: Custom Python function
-- **Purpose**: Handle typos and spelling errors
-- **Advantage**: Improves search recall
+## Technical Stack
 
-## 🔄 Integration Architecture
-
-```
-React Frontend → Node.js API → Flask ML Service → MongoDB
-                     ↓              ↓
-              (Business Logic)  (ML Processing)
-```
-
-## 📊 Performance Features
-
-- **Caching**: Results cached for better performance
-- **Fallback Systems**: Always returns results even with minimal data
-- **Scalable**: Can be deployed on separate ML servers
-- **Extensible**: Easy to add new ML models
-
-## 🛠 Development
-
-### Adding New ML Models
-1. Create new class in `app.py`
-2. Add endpoint route
-3. Update Node.js proxy in `aiRoutes.js`
-4. Test with sample data
-
-### Enhancing Algorithms
-- Replace TF-IDF with Word2Vec/BERT embeddings
-- Add deep learning models with TensorFlow/PyTorch
-- Implement reinforcement learning for recommendations
-- Add A/B testing framework
-
-## 🚀 Production Deployment
-
-### Docker Deployment
-```dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 5001
-CMD ["python", "app.py"]
-```
-
-### Environment Variables
-```bash
-MONGODB_API_BASE=http://localhost:5000/api/v1
-FLASK_ENV=production
-FLASK_DEBUG=False
-```
-
-## 📈 Monitoring & Analytics
-
-- **Request Logging**: All ML requests logged
-- **Performance Metrics**: Response times tracked
-- **Model Accuracy**: Recommendation click-through rates
-- **Error Handling**: Graceful fallbacks for all failures
-
-## 🔮 Future Enhancements
-
-1. **Deep Learning Models**
-   - Neural Collaborative Filtering
-   - Transformer-based search
-   - BERT for chatbot NLU
-
-2. **Advanced Features**
-   - Real-time personalization
-   - Multi-armed bandit optimization
-   - Seasonal trend analysis
-   - Cross-domain recommendations
-
-3. **MLOps Integration**
-   - Model versioning
-   - A/B testing framework
-   - Automated retraining
-   - Performance monitoring
+- **Flask**: Web framework
+- **scikit-learn**: Machine learning algorithms
+- **Transformers**: Pre-trained NLP models
+- **NumPy/Pandas**: Data processing
+- **CORS**: Cross-origin support
